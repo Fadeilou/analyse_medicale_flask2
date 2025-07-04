@@ -38,8 +38,13 @@ CLASS_NAMES = ["DREPANOCYTES", "ELLIPTOCYTES", "SCHIZOCYTES", "SAINS"] # Ajout d
 
 # --- Chargement du modèle d'IA (variable globale) ---
 ai_model = None
+model_loaded = False
+
 def load_ai_model():
-    global ai_model
+    global ai_model, model_loaded
+    if model_loaded:
+        return ai_model
+        
     try:
         # Créer le dossier de résultats s'il n'existe pas
         if not os.path.exists(RESULTS_FOLDER):
@@ -47,19 +52,33 @@ def load_ai_model():
             print(f"Dossier de résultats créé: {RESULTS_FOLDER}")
 
         if os.path.exists(MODEL_PATH):
+            print("Chargement du modèle d'IA en cours...")
+            # Charger avec des paramètres optimisés pour Render.com
             ai_model = YOLO(MODEL_PATH)
-            # Vous pouvez optionnellement faire une inférence rapide pour "chauffer" le modèle si nécessaire
-            # ai_model.predict(np.zeros((640, 640, 3)), verbose=False)
+            
+            # Désactiver la fusion des couches pour économiser la mémoire
+            if hasattr(ai_model.model, 'fuse'):
+                try:
+                    # Éviter la fusion automatique qui peut causer des erreurs de mémoire
+                    pass  # Ne pas appeler fuse() automatiquement
+                except Exception as e:
+                    print(f"Warning: Impossible de fusionner le modèle: {e}")
+            
+            model_loaded = True
             print(f"Modèle d'IA chargé avec succès depuis: {MODEL_PATH}")
         else:
             print(f"ERREUR: Fichier modèle d'IA non trouvé à l'emplacement: {MODEL_PATH}")
             ai_model = None
+            model_loaded = False
     except Exception as e:
         print(f"Erreur lors du chargement du modèle d'IA: {e}")
         ai_model = None
+        model_loaded = False
+        
+    return ai_model
 
-# Charger le modèle d'IA au démarrage
-load_ai_model()
+# Charger le modèle d'IA seulement au premier usage (chargement paresseux)
+# load_ai_model()
 
 # --- Supprimer ou commenter l'ancien chargement du modèle CNN ---
 # model_cnn = None
@@ -175,8 +194,16 @@ def analyse():
     image_filename_result = None # Nom du fichier image RÉSULTAT (avec masques)
 
     if request.method == 'POST':
-        if ai_model is None:
-            flash("Erreur: Le modèle d'analyse d'IA n'est pas chargé.", 'danger')
+        # Vérifier si le modèle peut être chargé
+        try:
+            if ai_model is None:
+                print("Tentative de chargement du modèle...")
+                load_ai_model()
+                if ai_model is None:
+                    flash("Erreur: Le modèle d'analyse d'IA n'est pas disponible. Veuillez réessayer dans quelques instants.", 'danger')
+                    return render_template('index.html', title='Analyse', dashboard_content=True)
+        except Exception as e:
+            flash(f"Erreur de chargement du modèle: {str(e)}", 'danger')
             return render_template('index.html', title='Analyse', dashboard_content=True)
 
         if 'image_upload' not in request.files:
@@ -201,8 +228,14 @@ def analyse():
                     #     f.write(file_content)
 
                 except Exception as e:
-                    flash(f"Erreur lors de l'analyse de l'image: {e}", 'danger')
-                    print(f"Traceback de l'erreur d'analyse: {traceback.format_exc()}") # Log détaillé
+                    error_msg = str(e)
+                    if "WORKER TIMEOUT" in error_msg or "out of memory" in error_msg.lower():
+                        flash("Erreur: Ressources insuffisantes pour traiter cette image. Veuillez essayer avec une image plus petite.", 'danger')
+                    elif "torch" in error_msg.lower() or "cuda" in error_msg.lower():
+                        flash("Erreur: Problème de configuration du modèle. Veuillez réessayer.", 'danger')
+                    else:
+                        flash(f"Erreur lors de l'analyse de l'image: {error_msg}", 'danger')
+                    print(f"Traceback de l'erreur d'analyse: {traceback.format_exc()}")
                     resultat_analyse = None
                     image_filename_result = None
             else:
@@ -219,8 +252,13 @@ def analyse():
 
 def analyse_image_ai(image_file_content, original_filename):
     global ai_model
+    
+    # Chargement paresseux du modèle
     if ai_model is None:
-        raise Exception("Le modèle d'IA n'est pas chargé.")
+        print("Chargement du modèle d'IA à la demande...")
+        ai_model = load_ai_model()
+        if ai_model is None:
+            raise Exception("Le modèle d'IA n'a pas pu être chargé.")
 
     try:
         # Décoder l'image depuis les bytes
@@ -229,8 +267,26 @@ def analyse_image_ai(image_file_content, original_filename):
         if img is None:
             raise ValueError("Impossible de décoder l'image.")
 
-        # Exécuter l'inférence
-        results = ai_model.predict(img, conf=CONFIDENCE_THRESHOLD, verbose=False)
+        # Redimensionner l'image pour économiser la mémoire si elle est trop grande
+        height, width = img.shape[:2]
+        max_size = 1024  # Taille maximale recommandée pour Render.com
+        if max(height, width) > max_size:
+            scale = max_size / max(height, width)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
+            print(f"Image redimensionnée de {width}x{height} à {new_width}x{new_height}")
+
+        # Exécuter l'inférence avec des paramètres optimisés
+        print("Début de l'inférence...")
+        results = ai_model.predict(
+            img, 
+            conf=CONFIDENCE_THRESHOLD, 
+            verbose=False,
+            device='cpu',  # Forcer l'utilisation du CPU sur Render.com
+            imgsz=640      # Taille d'image optimisée
+        )
+        print("Inférence terminée.")
 
         num_detections = 0
         detected_diseases = set()
