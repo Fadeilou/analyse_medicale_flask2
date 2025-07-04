@@ -10,7 +10,7 @@ WTForms==3.2.1
 SQLAlchemy==2.0.38
 
 # Image processing and computer vision
-opencv-python==4.11.0.86
+opencv-python-headless==4.11.0.86
 pillow==11.1.0
 numpy==2.0.2
 
