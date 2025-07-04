@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Analyse Médicale{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-gray-100 h-screen">
+
+    <div class="flex flex-col items-center justify-center px-6 pt-8 mx-auto md:h-screen pt:mt-0 dark:bg-gray-900">
+        <a href="{{ url_for('routes.index_redirect_dashboard') }}" class="flex items-center justify-center mb-8 text-2xl font-semibold lg:mb-10 dark:text-white">
+            <!-- <img src="{{ url_for('static', filename='logo.svg') }}" class="mr-4 h-11" alt="Logo Analyse Médicale"> {# Remplacez 'logo.svg' par le chemin vers votre logo si vous en avez un #} -->
+            <span class="text-black">Analyse Médicale</span>
+        </a>
+        <!-- Card -->
+        <div class="w-full max-w-xl p-6 space-y-8 sm:p-8 bg-white rounded-lg shadow dark:bg-gray-800">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                Se connecter à la plateforme
+            </h2>
+            <form class="mt-8 space-y-6" method="post">
+                {{ form.hidden_tag() }} {# Champ CSRF Token de Flask-WTF #}
+                <div>
+                    {{ form.username.label(class="block mb-2 text-sm font-medium text-gray-900 dark:text-white", for="username") }}
+                    {{ form.username(class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500", placeholder="Votre nom d'utilisateur", id="username", type="text", required="required") }}
+                    {% for error in form.username.errors %}
+                        <p class="text-red-500 text-xs italic">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div>
+                    {{ form.password.label(class="block mb-2 text-sm font-medium text-gray-900 dark:text-white", for="password") }}
+                    {{ form.password(class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500", placeholder="••••••••", id="password", type="password", required="required") }}
+                     {% for error in form.password.errors %}
+                        <p class="text-red-500 text-xs italic">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="flex items-start">
+                    {# Option "Se souvenir de moi" - non implémentée dans cet exemple, mais vous pouvez l'ajouter #}
+                    {# <div class="flex items-center h-5">
+                        <input id="remember" aria-describedby="remember" name="remember" type="checkbox" class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" required>
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="remember" class="font-medium text-gray-900 dark:text-white">Se souvenir de moi</label>
+                    </div> #}
+                    {# Lien "Mot de passe oublié" - non implémenté dans cet exemple #}
+                    {# <a href="#" class="ml-auto text-sm text-primary-700 hover:underline dark:text-primary-500">Mot de passe oublié?</a> #}
+                </div>
+                <button type="submit" class="w-full px-5 py-3 text-base font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Se connecter</button>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Pas encore inscrit? <a href="{{ url_for('routes.register') }}" class="font-semibold text-blue-700 hover:underline dark:text-blue-500">Créer un compte</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+
+</body>
+</html>

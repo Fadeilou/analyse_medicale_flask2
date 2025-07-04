@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Détail de l'Analyse{% endblock %}
+
+{% block content %}
+    <div class="bg-white p-8 rounded-lg shadow-md dark:bg-gray-800">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Détail de l'Analyse</h1>
+
+        <div class="mb-6 p-4">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Informations Patient</h2>
+            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Nom:</strong> <span class="dark:text-white">{{ analyse.patient.nom }}</span></p>
+            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Prénom:</strong> <span class="dark:text-white">{{ analyse.patient.prenom }}</span></p>
+            {% if analyse.patient.date_naissance %}
+                <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Date de naissance:</strong> <span class="dark:text-white">{{ analyse.patient.date_naissance }}</span></p>
+            {% endif %}
+        </div>
+
+        <div class="mb-6 p-4 border rounded dark:bg-gray-700 dark:border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Résultats de l'Analyse</h2>
+            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Date d'analyse:</strong> <span class="dark:text-white">{{ analyse.date_analyse.strftime('%d-%m-%Y %H:%M:%S') }}</span></p>
+            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Résultat du test:</strong>
+                {% if analyse.test_positif %}
+                    <span class="text-red-700 font-bold dark:text-red-500">Positif</span>
+                {% else %}
+                    <span class="text-green-700 font-bold dark:text-green-500">Négatif</span>
+                {% endif %}
+            </p>
+            {% if analyse.test_positif %}
+                <div class="mt-4 p-4 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700 dark:text-white">Anomalie détectée: {{ analyse.type_anomalie }}</h3>
+                    <p class="text-gray-700 dark:text-gray-300"><strong>Recommandation:</strong> {{ analyse.recommandation }}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mb-6 p-4">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Image Analysée</h2>
+            <img id="detail-image" src="" alt="Image Analysée" class="max-w-full h-auto rounded-lg">  {# Image tag with ID for JavaScript #}
+        </div>
+
+        <div class="mt-8">
+            <a href="{{ url_for('routes.analyses_list') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Retour à la liste des analyses
+            </a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imagePath = "{{ analyse.image_path }}"; // Get image path from template
+            console.log(imagePath);
+            const detailImageElement = document.getElementById('detail-image');
+            if (imagePath && detailImageElement) {
+                detailImageElement.src = `/static/${imagePath}`; // Construct URL and set src
+                console.log(detailImageElement.src);
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,11 @@
+/* static/style.css */
+
+.test-label-positif {
+    @apply font-bold px-2 py-1 rounded text-white bg-red-500; /* Utilise les classes Tailwind directement si possible */
+}
+
+.test-label-negatif {
+    @apply font-bold px-2 py-1 rounded text-white bg-green-500; /* Utilise les classes Tailwind directement si possible */
+}
+
+/* Vous pouvez ajouter d'autres styles personnalisés ici, si nécessaire */

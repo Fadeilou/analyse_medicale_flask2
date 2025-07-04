@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil{% endblock %}
+
+{% block content %}
+    <div class="bg-white p-8 rounded shadow-md">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Votre Profil</h1>
+
+        <div class="mb-4">
+            <p class="text-gray-700">Nom d'utilisateur: <span class="font-medium">{{ session.get('user') }}</span></p>
+            {# Ajouter ici des champs pour modifier le profil (nom, email, mot de passe, etc.) si nécessaire #}
+        </div>
+
+        {# Formulaire pour mettre à jour les informations de connexion (nom d'utilisateur, mot de passe) si nécessaire #}
+        {# ... #}
+    </div>
+{% endblock %}

@@ -1,0 +1,59 @@
+# Python bytecode files
+*.pyc
+__pycache__/
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# IDE and OS specific files
+.idea/
+.vscode/
+*.swp
+*~
+*.DS_Store
+._*
+Thumbs.db
+
+# Log and temp files
+*.log
+*.tmp
+tmp/
+temp/
+instance/  # Flask instance folder (if you are using it for SQLite database etc.)
+*.sqlite
+*.db
+
+# Uploads folder (if you have one and don't want to track user data)
+uploads/
+
+# Environment configuration (sensitive information - be careful not to commit secrets!)
+.env
+config.py  # If you store sensitive configuration directly in a config.py file
+
+# Dependency cache
+*.egg-info/
+dist/
+build/
+develop-eggs/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+_bootstrap/
+_venv/
+wheels/
+share/python-wheels/
+*.egg
+*.whl
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tgz
+*.h5

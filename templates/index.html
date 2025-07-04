@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyse d'Image Médicale{% endblock %}
+
+{% block content %} {# Utilise le block 'dashboard_content' pour le contenu du dashboard #}
+    <div class="bg-white p-8 rounded-lg shadow-md dark:bg-gray-800">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Analyse d'Image de Globules Rouges</h1>
+
+        <div class="mb-8 text-center" id=""> {# Section initiale - bouton "Télécharger", ID 'upload-section' #}
+            <form method="post" enctype="multipart/form-data" action="{{ url_for('routes.analyse') }}" id="upload-form"> {# Formulaire d'upload, ID 'upload-form', ACTION vers /analyse #}
+
+                <div id="upload-section" class="mb-8 text-center">
+                    <p class="text-gray-700 mb-4 dark:text-gray-300">Étape 1: Veuillez télécharger une image médicale pour l'analyse</p> {# Phrase explicative ajoutée #}
+                    {# Suppression du label et de l'input type="file" visibles #}
+                    <div class="mb-6 hidden"> {# Input type="file" caché, mais toujours présent pour être déclenché par le bouton #}
+                        <label for="image_upload" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Charger une image médicale</label>
+                        <input type="file" id="image_upload" name="image_upload" accept="image/*" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                    </div>
+                    <button type="button" id="upload-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Télécharger l'image</button> {# Bouton "Télécharger", ID 'upload-button' #}
+                </div>
+
+                <div id="image-preview-section" class="hidden mb-8 text-center"> {# Section de prévisualisation de l'image, cachée initialement, ID 'image-preview-section' #}
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Étape 2: Prévisualisation de l'image chargée</h2>
+                    <img id="image-preview" src="#" alt="Prévisualisation de l'image" class="max-w-md max-h-96 mx-auto"> {# Zone d'affichage de l'image, ID 'image-preview' #}
+                    <button type="submit" id="analyse-button" class="mt-6 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Analyser l'image</button> {# Bouton "Analyser", ID 'analyse-button', type="submit" pour soumettre le formulaire #}
+
+                    {# Preloader / Indicateur de chargement (caché initialement, ID 'loading-indicator') #}
+                    <div id="loading-indicator" class="hidden mt-4">
+                        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">Analyse en cours, veuillez patienter...</p>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+
+
+    {% if resultat_analyse %}
+        <div id="resultats-section" class="mt-8 p-6 border rounded dark:bg-gray-700 dark:border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Étape 3: Résultats de l'Analyse</h2>
+
+            {# Affichage Statut : Sain ou Malade #}
+            {% if resultat_analyse.status == 'Malade' %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 dark:bg-red-400 dark:border-red-500 dark:text-white" role="alert">
+                    <strong class="font-bold">Test Positif!</strong>
+                    <span class="block sm:inline">Anomalies détectées. Patient Malade.</span>
+                </div>
+                {# Affichage des maladies détectées #}
+                {% if resultat_analyse.diseases %}
+                    <div class="mb-4">
+                        <h4 class="text-md font-semibold text-gray-700 dark:text-white">Types d'anomalies détectées :</h4>
+                        <ul class="list-disc list-inside text-gray-700 dark:text-gray-300">
+                            {% for disease in resultat_analyse.diseases %}
+                                <li>{{ disease }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% elif resultat_analyse.status == 'Sain' %}
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative dark:bg-green-400 dark:border-green-500 dark:text-white" role="alert">
+                    <strong class="font-bold">Test Négatif!</strong>
+                    <span class="block sm:inline">Aucune anomalie détectée. Patient Sain.</span>
+                </div>
+            {% else %}
+                <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative dark:bg-yellow-400 dark:border-yellow-500 dark:text-white" role="alert">
+                    <strong class="font-bold">Statut Indéterminé!</strong>
+                    <span class="block sm:inline">L'analyse n'a pas pu déterminer le statut.</span>
+                </div>
+            {% endif %}
+
+            {# Affichage Recommandation #}
+            {% if resultat_analyse.recommandation %}
+                <div class="p-4 border rounded bg-gray-50 dark:bg-gray-600 dark:border-gray-500 mb-4">
+                    <p class="text-gray-700 dark:text-gray-300"><strong>Recommandation:</strong> {{ resultat_analyse.recommandation }}</p>
+                </div>
+            {% endif %}
+
+            {# Affichage de l'Image Résultat avec Masques #}
+            {% if image_filename %} {# image_filename contient maintenant le nom du fichier résultat #}
+                <div class="mt-4 mb-4 text-center">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700 dark:text-white">Image Analysée avec Détections :</h3>
+                    {# Utilise la nouvelle route pour servir l'image depuis results_images #}
+                    <img id="result-image" src="{{ url_for('routes.send_result_image', filename=image_filename) }}" alt="Image analysée avec détections" class="max-w-md max-h-96 mx-auto border dark:border-gray-600">
+                </div>
+            {% else %}
+                <p class="text-center text-red-500 dark:text-red-400">Impossible d'afficher l'image résultat.</p>
+            {% endif %}
+
+            {# Bouton pour afficher le formulaire patient #}
+            <div class="mt-6 text-center">
+                <button type="button" id="save-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Sauvegarder les résultats</button>
+            </div>
+
+            {# Formulaire Infos Patient #}
+            <form method="post" action="{{ url_for('routes.save_analysis') }}" id="patient-info-form-section" class="mt-8 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Étape 4: Informations Patient (pour sauvegarde)</h2>
+                <div class="bg-gray-100 p-4 rounded border dark:bg-gray-700 dark:border-gray-600">
+                    {# ... champs nom, prenom, date_naissance ... (inchangés) ... #}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label for="patient_nom" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Nom:</label>
+                            <input type="text" id="patient_nom" name="patient_nom" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-800 dark:border-gray-700 dark:text-white" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="patient_prenom" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Prénom:</label>
+                            <input type="text" id="patient_prenom" name="patient_prenom" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="patient_date_naissance" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Date de naissance (AAAA-MM-JJ):</label>
+                        <input type="date" id="patient_date_naissance" name="patient_date_naissance" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                    </div>
+                </div>
+                {# Champs cachés pour transmettre les infos d'analyse #}
+                <input type="hidden" name="output_image_filename" value="{{ image_filename }}"> {# Nom fichier RÉSULTAT #}
+                <input type="hidden" name="status" value="{{ resultat_analyse.status }}"> {# "Sain" ou "Malade" #}
+                <input type="hidden" name="diseases" value="{{ resultat_analyse.diseases | join(',') }}"> {# Liste des maladies séparées par virgule #}
+                <input type="hidden" name="recommandation" value="{{ resultat_analyse.recommandation }}">
+
+                <button type="submit" id="save-form-button" class="mt-6 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Confirmer et Sauvegarder</button>
+            </form>
+        </div>
+    {% endif %}
+
+    {# ... (JavaScript existant pour gérer l'upload et l'affichage/masquage des sections) ... #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadInput = document.getElementById('image_upload');
+            const uploadButton = document.getElementById('upload-button');
+            const previewSection = document.getElementById('image-preview-section');
+            const previewImage = document.getElementById('image-preview');
+            const uploadSection = document.getElementById('upload-section'); // Référence à la section initiale
+            const analyseButton = document.getElementById('analyse-button');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const resultsSection = document.getElementById('resultats-section'); // Référence section résultats
+            const saveButton = document.getElementById('save-button'); // Bouton SAUVEGARDER (hors formulaire patient)
+            const patientFormSection = document.getElementById('patient-info-form-section'); // Formulaire patient
+
+            // Déclencher le clic sur l'input file caché quand on clique sur le bouton "Télécharger"
+            if (uploadButton && uploadInput) {
+                uploadButton.addEventListener('click', function() {
+                    uploadInput.click();
+                });
+            }
+
+            // Afficher la prévisualisation quand une image est sélectionnée
+            if (uploadInput && previewSection && previewImage && uploadSection) {
+                uploadInput.addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImage.src = e.target.result;
+                            uploadSection.classList.add('hidden'); // Masquer la section upload initiale
+                            previewSection.classList.remove('hidden'); // Afficher la section preview
+                        }
+                        reader.readAsDataURL(file);
+                    } else {
+                        // Réinitialiser si le fichier n'est pas une image
+                        previewImage.src = '#';
+                        uploadSection.classList.remove('hidden'); // Réafficher la section upload
+                        previewSection.classList.add('hidden'); // Masquer la section preview
+                    }
+                });
+            }
+
+            // Afficher le preloader lors du clic sur "Analyser l'image"
+            if (analyseButton && loadingIndicator) {
+                analyseButton.addEventListener('click', function() {
+                    // Vous pourriez vouloir ajouter une validation ici pour s'assurer qu'une image est chargée
+                    if (previewImage.src && previewImage.src !== '#') {
+                        analyseButton.classList.add('hidden'); // Masquer le bouton Analyser
+                        loadingIndicator.classList.remove('hidden'); // Afficher le preloader
+                        // Le formulaire sera soumis par le type="submit" du bouton
+                    } else {
+                        alert("Veuillez d'abord télécharger une image."); // Ou un message plus élégant
+                    }
+                });
+            }
+
+            // Afficher le formulaire patient quand on clique sur "Sauvegarder"
+            if (saveButton && patientFormSection) {
+                saveButton.addEventListener('click', function() {
+                    patientFormSection.classList.remove('hidden'); // Afficher le formulaire
+                    saveButton.classList.add('hidden'); // Cacher le bouton initial "Sauvegarder"
+                });
+            }
+
+            // Si la page est chargée et qu'il y a déjà des résultats (après soumission)
+            // Assurer que la section upload/preview est masquée et la section résultat est visible
+            // (Le formulaire patient sera masqué par défaut et affiché par le bouton "Sauvegarder")
+            if (resultsSection) {
+                uploadSection.classList.add('hidden');
+                previewSection.classList.add('hidden'); // Masquer aussi la preview car les résultats sont là
+            }
+
+
+        });
+    </script>
+
+{% endblock %}

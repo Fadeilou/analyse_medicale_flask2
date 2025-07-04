@@ -1,0 +1,28 @@
+{# templates/header.html #}
+<nav class="fixed z-30 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+    <div class="px-3 py-3 lg:px-5 lg:pl-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center justify-start">
+                <!-- Bouton Hamburger pour Sidebar Mobile -->
+                <button id="toggleSidebarMobile" aria-expanded="false" aria-controls="sidebar" class="p-2 text-gray-600 rounded cursor-pointer lg:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                    <span class="sr-only">Ouvrir le menu principal</span>
+                    <svg id="toggleSidebarMobileHamburger" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 010 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"></path></svg>
+                    <svg id="toggleSidebarMobileClose" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </button>
+                <a href="{{ url_for('routes.index_redirect_dashboard') }}" class="flex ml-2 md:mr-24">
+                    <!-- <img src="{{ url_for('static', filename='logo.svg') }}" class="h-8 mr-3" alt="Logo Analyse Médicale" /> {# Remplacez 'logo.svg' par le chemin vers votre logo si vous en avez un #} -->
+                    <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Analyse Médicale</span>
+                </a>
+            </div>
+            <div class="flex items-center">
+                {% if session.get('user')!= null %} {# --- Condition pour l'utilisateur CONNECTÉ --- #}
+                    <span class="text-black-300 mr-4">Connecté en tant que {{ session['user'] }}</span> {# Affiche le nom d'utilisateur depuis la session #}
+                    <a href="{{ url_for('routes.logout') }}" class="text-black px-4 py-2 rounded hover:bg-gray-100">Déconnexion</a> {# Lien de déconnexion #}
+                {% else %} {# --- Condition pour l'utilisateur NON CONNECTÉ --- #}
+                    <a href="{{ url_for('routes.login') }}" class="text-white px-4 py-2 rounded hover:bg-gray-700">Connexion</a> {# Lien de connexion #}
+                    <a href="{{ url_for('routes.register') }}" class="text-white px-4 py-2 rounded hover:bg-gray-700 ml-2">Inscription</a> {# Lien d'inscription #}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
