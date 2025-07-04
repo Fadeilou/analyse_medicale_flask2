@@ -1,3 +1,9 @@
-sudo usermod -aG docker $USER
-sudo systemctl restart docker
-docker --version
+cd /home/fadel/analyse_medicale_flask2 && curl -s localhost:5000/register | wc -c
+cd /home/fadel/analyse_medicale_flask2 && pkill -f "python.*app.py" 2>/dev/null || true
+cd /home/fadel/analyse_medicale_flask2 && curl -s http://localhost:5000/register
+cd /home/fadel/analyse_medicale_flask2 && pkill -f python
+cd /home/fadel/analyse_medicale_flask2 && python app.py &
+cd /home/fadel/analyse_medicale_flask2/templates && mv register.html register_old.html
+cd /home/fadel/analyse_medicale_flask2 && rm -f templates/register.html
+cd /home/fadel/analyse_medicale_flask2/templates && mv register_debug.html register_debug.html.bak
+cd /home/fadel/analyse_medicale_flask2 && pkill -f "python.*app.py" 2>/dev/null || pkill -f "flask" 2>/dev/null || true

@@ -2,58 +2,176 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Analyse Médicale{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - MediScan</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-gray-100 h-screen">
+<body class="min-h-screen hero-gradient flex items-center justify-center p-2 sm:p-4">
 
-    <div class="flex flex-col items-center justify-center px-6 pt-8 mx-auto md:h-screen pt:mt-0 dark:bg-gray-900">
-        <a href="{{ url_for('routes.index_redirect_dashboard') }}" class="flex items-center justify-center mb-8 text-2xl font-semibold lg:mb-10 dark:text-white">
-            <!-- <img src="{{ url_for('static', filename='logo.svg') }}" class="mr-4 h-11" alt="Logo Analyse Médicale"> {# Remplacez 'logo.svg' par le chemin vers votre logo si vous en avez un #} -->
-            <span class="text-black">Analyse Médicale</span>
-        </a>
-        <!-- Card -->
-        <div class="w-full max-w-xl p-6 space-y-8 sm:p-8 bg-white rounded-lg shadow dark:bg-gray-800">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Se connecter à la plateforme
-            </h2>
-            <form class="mt-8 space-y-6" method="post">
-                {{ form.hidden_tag() }} {# Champ CSRF Token de Flask-WTF #}
-                <div>
-                    {{ form.username.label(class="block mb-2 text-sm font-medium text-gray-900 dark:text-white", for="username") }}
-                    {{ form.username(class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500", placeholder="Votre nom d'utilisateur", id="username", type="text", required="required") }}
-                    {% for error in form.username.errors %}
-                        <p class="text-red-500 text-xs italic">{{ error }}</p>
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-10 hidden sm:block">
+        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25px 25px, white 2px, transparent 2px); background-size: 50px 50px;"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-md mx-auto">
+        <!-- Logo et titre -->
+        <div class="text-center mb-6 sm:mb-8 animate-fade-in px-4">
+            <a href="{{ url_for('routes.landing') }}" class="inline-flex items-center justify-center mb-4 sm:mb-6 text-white hover:text-blue-200 transition duration-300">
+                <i class="fas fa-microscope text-3xl sm:text-4xl mr-2 sm:mr-3"></i>
+                <span class="text-2xl sm:text-3xl font-bold">MediScan</span>
+            </a>
+            <h1 class="text-xl sm:text-2xl font-bold text-white mb-2">Bon retour !</h1>
+            <p class="text-sm sm:text-base text-blue-100">Connectez-vous à votre compte pour continuer</p>
+        </div>
+
+        <!-- Formulaire de connexion -->
+        <div class="card animate-slide-in mx-2 sm:mx-0">
+            <!-- Messages Flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'danger' else category }} mb-4 sm:mb-6">
+                            <div class="flex items-start">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'info-circle' if category == 'info' else 'check-circle' if category == 'success' else 'exclamation-triangle' }} mr-2 mt-1 flex-shrink-0"></i>
+                                <span class="text-sm sm:text-base">{{ message }}</span>
+                            </div>
+                        </div>
                     {% endfor %}
-                </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="post" class="space-y-4 sm:space-y-6">
+                {{ form.hidden_tag() }}
+                
+                <!-- Nom d'utilisateur -->
                 <div>
-                    {{ form.password.label(class="block mb-2 text-sm font-medium text-gray-900 dark:text-white", for="password") }}
-                    {{ form.password(class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500", placeholder="••••••••", id="password", type="password", required="required") }}
-                     {% for error in form.password.errors %}
-                        <p class="text-red-500 text-xs italic">{{ error }}</p>
-                    {% endfor %}
+                    {{ form.username.label(class="form-label text-sm sm:text-base") }}
+                    {{ form.username(class="form-input text-sm sm:text-base" + (" border-red-300" if form.username.errors else ""), placeholder="Entrez votre nom d'utilisateur") }}
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="form-error text-xs sm:text-sm">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
-                <div class="flex items-start">
-                    {# Option "Se souvenir de moi" - non implémentée dans cet exemple, mais vous pouvez l'ajouter #}
-                    {# <div class="flex items-center h-5">
-                        <input id="remember" aria-describedby="remember" name="remember" type="checkbox" class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" required>
+
+                <!-- Mot de passe -->
+                <div>
+                    {{ form.password.label(class="form-label text-sm sm:text-base") }}
+                    <div class="relative">
+                        {{ form.password(class="form-input text-sm sm:text-base pr-10" + (" border-red-300" if form.password.errors else ""), placeholder="Entrez votre mot de passe", id="password") }}
+                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye text-sm" id="eye-icon"></i>
+                        </button>
                     </div>
-                    <div class="ml-3 text-sm">
-                        <label for="remember" class="font-medium text-gray-900 dark:text-white">Se souvenir de moi</label>
-                    </div> #}
-                    {# Lien "Mot de passe oublié" - non implémenté dans cet exemple #}
-                    {# <a href="#" class="ml-auto text-sm text-primary-700 hover:underline dark:text-primary-500">Mot de passe oublié?</a> #}
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <div class="form-error text-xs sm:text-sm">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
-                <button type="submit" class="w-full px-5 py-3 text-base font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Se connecter</button>
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Pas encore inscrit? <a href="{{ url_for('routes.register') }}" class="font-semibold text-blue-700 hover:underline dark:text-blue-500">Créer un compte</a>
+
+                <!-- Options -->
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-2">
+                        {{ form.remember_me(class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2") }}
+                        {{ form.remember_me.label(class="text-xs sm:text-sm text-gray-600") }}
+                    </div>
+                    <a href="{{ url_for('routes.forgot_password') }}" class="text-xs sm:text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                        Mot de passe oublié ?
+                    </a>
                 </div>
+
+                <!-- Bouton de connexion -->
+                <button type="submit" class="btn-primary w-full text-sm sm:text-base">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Se connecter
+                </button>
             </form>
+
+            <!-- Lien d'inscription -->
+            <div class="mt-4 sm:mt-6 text-center">
+                <p class="text-sm sm:text-base text-gray-600">
+                    Pas encore de compte ? 
+                    <a href="{{ url_for('routes.register') }}" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline">
+                        Créez-en un gratuitement
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Lien retour à l'accueil -->
+        <div class="text-center mt-4 sm:mt-6 animate-fade-in px-4">
+            <a href="{{ url_for('routes.landing') }}" class="text-blue-200 hover:text-white transition duration-300 text-sm sm:text-base">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Informations d'aide mobile -->
+        <div class="mt-6 sm:hidden animate-fade-in mx-2">
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                <h3 class="text-white font-semibold mb-2 text-center text-sm">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Première visite ?
+                </h3>
+                <p class="text-xs text-blue-100 text-center">
+                    Créez un compte gratuit pour accéder à toutes les fonctionnalités d'analyse médicale intelligente.
+                </p>
+            </div>
         </div>
     </div>
 
-    
+    <script>
+        function togglePassword() {
+            const passwordField = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
 
+        // Auto-hide alerts after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-10px)';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
+
+        // Ajustement responsive
+        function adjustForMobile() {
+            const isMobile = window.innerWidth < 640;
+            const elements = document.querySelectorAll('.animate-fade-in, .animate-slide-in');
+            
+            elements.forEach(el => {
+                if (isMobile) {
+                    el.style.animationDuration = '0.4s';
+                } else {
+                    el.style.animationDuration = '0.6s';
+                }
+            });
+        }
+
+        window.addEventListener('resize', adjustForMobile);
+        document.addEventListener('DOMContentLoaded', adjustForMobile);
+    </script>
 </body>
 </html>

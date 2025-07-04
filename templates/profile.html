@@ -3,15 +3,270 @@
 {% block title %}Profil{% endblock %}
 
 {% block content %}
-    <div class="bg-white p-8 rounded shadow-md">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">Votre Profil</h1>
-
-        <div class="mb-4">
-            <p class="text-gray-700">Nom d'utilisateur: <span class="font-medium">{{ session.get('user') }}</span></p>
-            {# Ajouter ici des champs pour modifier le profil (nom, email, mot de passe, etc.) si nécessaire #}
+    <div class="container mx-auto px-4 py-6 sm:py-8">
+        <!-- Header avec avatar -->
+        <div class="card mb-6 sm:mb-8">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
+                <!-- Avatar -->
+                <div class="relative">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg">
+                        {{ session.get('user', 'U')[0].upper() }}
+                    </div>
+                    <div class="absolute -bottom-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                
+                <!-- Informations utilisateur -->
+                <div class="flex-1 text-center sm:text-left">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">{{ session.get('user') }}</h1>
+                    <p class="text-gray-600 mb-3">Membre depuis {{ moment().format('MMMM YYYY') if moment else 'récemment' }}</p>
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Compte actif
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <i class="fas fa-microscope mr-1"></i>
+                            Analyste
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Actions rapides -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <button class="btn-secondary text-sm">
+                        <i class="fas fa-edit mr-2"></i>
+                        Modifier
+                    </button>
+                    <button class="btn-outline text-sm">
+                        <i class="fas fa-cog mr-2"></i>
+                        Paramètres
+                    </button>
+                </div>
+            </div>
         </div>
 
-        {# Formulaire pour mettre à jour les informations de connexion (nom d'utilisateur, mot de passe) si nécessaire #}
-        {# ... #}
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div class="stat-card">
+                <div class="flex items-center">
+                    <div class="stat-icon bg-blue-500">
+                        <i class="fas fa-vials"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Analyses totales</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ total_analyses if total_analyses else '0' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="flex items-center">
+                    <div class="stat-icon bg-green-500">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Analyses réussies</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ successful_analyses if successful_analyses else '0' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="flex items-center">
+                    <div class="stat-icon bg-orange-500">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Cette semaine</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ week_analyses if week_analyses else '0' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="flex items-center">
+                    <div class="stat-icon bg-purple-500">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Score qualité</p>
+                        <p class="text-2xl font-bold text-gray-800">95%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sections principales -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            <!-- Informations personnelles -->
+            <div class="lg:col-span-2">
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-user mr-2 text-blue-500"></i>
+                            Informations personnelles
+                        </h2>
+                        <button class="btn-outline btn-sm">
+                            <i class="fas fa-edit mr-1"></i>
+                            Modifier
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center">
+                            <label class="text-sm font-medium text-gray-600 w-full sm:w-32 mb-1 sm:mb-0">Nom d'utilisateur</label>
+                            <span class="text-gray-800 font-medium">{{ session.get('user') }}</span>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row sm:items-center">
+                            <label class="text-sm font-medium text-gray-600 w-full sm:w-32 mb-1 sm:mb-0">Email</label>
+                            <span class="text-gray-800">{{ user_email if user_email else 'Non renseigné' }}</span>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row sm:items-center">
+                            <label class="text-sm font-medium text-gray-600 w-full sm:w-32 mb-1 sm:mb-0">Téléphone</label>
+                            <span class="text-gray-800">{{ user_phone if user_phone else 'Non renseigné' }}</span>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row sm:items-center">
+                            <label class="text-sm font-medium text-gray-600 w-full sm:w-32 mb-1 sm:mb-0">Spécialité</label>
+                            <span class="text-gray-800">{{ user_specialty if user_specialty else 'Analyse médicale générale' }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Activité récente -->
+                <div class="card mt-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-history mr-2 text-green-500"></i>
+                        Activité récente
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                                <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-vials text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-800">{{ activity.description }}</p>
+                                        <p class="text-xs text-gray-500">{{ activity.date }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-8">
+                                <i class="fas fa-inbox text-gray-400 text-3xl mb-3"></i>
+                                <p class="text-gray-500">Aucune activité récente</p>
+                                <a href="{{ url_for('routes.index') }}" class="btn-primary btn-sm mt-3">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Commencer une analyse
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar avec actions rapides -->
+            <div class="lg:col-span-1">
+                <!-- Actions rapides -->
+                <div class="card mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-bolt mr-2 text-yellow-500"></i>
+                        Actions rapides
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <a href="{{ url_for('routes.index') }}" class="block w-full btn-primary text-sm">
+                            <i class="fas fa-upload mr-2"></i>
+                            Nouvelle analyse
+                        </a>
+                        
+                        <a href="{{ url_for('routes.analyses_list') }}" class="block w-full btn-secondary text-sm">
+                            <i class="fas fa-list mr-2"></i>
+                            Voir mes analyses
+                        </a>
+                        
+                        <button class="block w-full btn-outline text-sm">
+                            <i class="fas fa-download mr-2"></i>
+                            Exporter données
+                        </button>
+                        
+                        <button class="block w-full btn-outline text-sm">
+                            <i class="fas fa-share mr-2"></i>
+                            Partager profil
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Préférences -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-sliders-h mr-2 text-purple-500"></i>
+                        Préférences
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm text-gray-600">Notifications email</label>
+                            <button class="toggle-switch active" onclick="toggleSwitch(this)">
+                                <span class="toggle-slider"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm text-gray-600">Mode sombre</label>
+                            <button class="toggle-switch" onclick="toggleSwitch(this)">
+                                <span class="toggle-slider"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm text-gray-600">Sons d'interface</label>
+                            <button class="toggle-switch active" onclick="toggleSwitch(this)">
+                                <span class="toggle-slider"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm text-gray-600">Sauvegarde auto</label>
+                            <button class="toggle-switch active" onclick="toggleSwitch(this)">
+                                <span class="toggle-slider"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+        
+        // Animation au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
 {% endblock %}

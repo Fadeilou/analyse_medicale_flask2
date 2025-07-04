@@ -1,28 +1,102 @@
 {# templates/header.html #}
-<nav class="fixed z-30 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-    <div class="px-3 py-3 lg:px-5 lg:pl-3">
+<nav class="fixed z-30 w-full navbar">
+    <div class="px-4 py-3 lg:px-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
                 <!-- Bouton Hamburger pour Sidebar Mobile -->
-                <button id="toggleSidebarMobile" aria-expanded="false" aria-controls="sidebar" class="p-2 text-gray-600 rounded cursor-pointer lg:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                {% if dashboard_content %}
+                <button id="toggleSidebarMobile" aria-expanded="false" aria-controls="sidebar" class="p-2 text-white rounded cursor-pointer lg:hidden hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-white/20 transition duration-300">
                     <span class="sr-only">Ouvrir le menu principal</span>
-                    <svg id="toggleSidebarMobileHamburger" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 010 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"></path></svg>
-                    <svg id="toggleSidebarMobileClose" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <svg id="toggleSidebarMobileHamburger" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <svg id="toggleSidebarMobileClose" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
                 </button>
-                <a href="{{ url_for('routes.index_redirect_dashboard') }}" class="flex ml-2 md:mr-24">
-                    <!-- <img src="{{ url_for('static', filename='logo.svg') }}" class="h-8 mr-3" alt="Logo Analyse Médicale" /> {# Remplacez 'logo.svg' par le chemin vers votre logo si vous en avez un #} -->
-                    <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Analyse Médicale</span>
+                {% endif %}
+                
+                <!-- Logo et titre -->
+                <a href="{% if current_user.is_authenticated %}{{ url_for('routes.dashboard') }}{% else %}{{ url_for('routes.landing') }}{% endif %}" class="flex ml-2 md:mr-24 items-center group">
+                    <i class="fas fa-microscope text-white text-2xl mr-3 group-hover:animate-pulse"></i>
+                    <span class="self-center text-xl font-bold sm:text-2xl whitespace-nowrap text-white">MediScan</span>
                 </a>
             </div>
-            <div class="flex items-center">
-                {% if session.get('user')!= null %} {# --- Condition pour l'utilisateur CONNECTÉ --- #}
-                    <span class="text-black-300 mr-4">Connecté en tant que {{ session['user'] }}</span> {# Affiche le nom d'utilisateur depuis la session #}
-                    <a href="{{ url_for('routes.logout') }}" class="text-black px-4 py-2 rounded hover:bg-gray-100">Déconnexion</a> {# Lien de déconnexion #}
-                {% else %} {# --- Condition pour l'utilisateur NON CONNECTÉ --- #}
-                    <a href="{{ url_for('routes.login') }}" class="text-white px-4 py-2 rounded hover:bg-gray-700">Connexion</a> {# Lien de connexion #}
-                    <a href="{{ url_for('routes.register') }}" class="text-white px-4 py-2 rounded hover:bg-gray-700 ml-2">Inscription</a> {# Lien d'inscription #}
+
+            <!-- Menu de droite -->
+            <div class="flex items-center space-x-4">
+                {% if current_user.is_authenticated %}
+                    <!-- Notifications (optionnel pour plus tard) -->
+                    <button class="p-2 text-white rounded-full hover:bg-white/20 transition duration-300 relative">
+                        <i class="fas fa-bell text-lg"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                    </button>
+
+                    <!-- Menu utilisateur -->
+                    <div class="relative group">
+                        <button class="flex items-center space-x-3 p-2 text-white rounded-lg hover:bg-white/20 transition duration-300">
+                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-sm"></i>
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <div class="text-sm font-semibold">{{ current_user.username }}</div>
+                                <div class="text-xs opacity-75">Technicien médical</div>
+                            </div>
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </button>
+
+                        <!-- Menu dropdown -->
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                            <div class="py-2">
+                                <a href="{{ url_for('routes.profile') }}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition duration-300">
+                                    <i class="fas fa-user-circle mr-3 text-gray-500"></i>
+                                    Mon profil
+                                </a>
+                                <a href="{{ url_for('routes.analyses_list') }}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition duration-300">
+                                    <i class="fas fa-history mr-3 text-gray-500"></i>
+                                    Mes analyses
+                                </a>
+                                <hr class="my-2">
+                                <a href="{{ url_for('routes.reset_password') }}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition duration-300">
+                                    <i class="fas fa-key mr-3 text-gray-500"></i>
+                                    Changer mot de passe
+                                </a>
+                                <hr class="my-2">
+                                <a href="{{ url_for('routes.logout') }}" class="flex items-center px-4 py-2 text-red-600 hover:bg-red-50 transition duration-300">
+                                    <i class="fas fa-sign-out-alt mr-3"></i>
+                                    Déconnexion
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Boutons pour utilisateurs non connectés -->
+                    <a href="{{ url_for('routes.login') }}" class="btn-secondary text-sm px-4 py-2">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Connexion
+                    </a>
+                    <a href="{{ url_for('routes.register') }}" class="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-4 py-2 rounded-lg transition duration-300">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        S'inscrire
+                    </a>
                 {% endif %}
             </div>
         </div>
     </div>
 </nav>
+
+<style>
+    /* Amélioration du menu dropdown */
+    .group:hover .group-hover\:opacity-100 {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    .group .group-hover\:opacity-100 {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+    }
+</style>

@@ -7,7 +7,9 @@ from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import date
 from forms import RegistrationForm
-from login_form import LoginForm
+from login_form import LoginForm, ForgotPasswordForm, ResetPasswordForm
+import secrets
+import string
 import cv2
 import numpy as np
 import traceback
@@ -18,46 +20,46 @@ import traceback
 # from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation, Dropout, ZeroPadding2D, BatchNormalization
 import pdb # Gardé si vous l'utilisez pour le débogage
 
-# --- NOUVEAU: Importer YOLO ---
+# --- Importer le modèle d'IA ---
 from ultralytics import YOLO
 
 routes = Blueprint('routes', __name__)
 
 UPLOAD_FOLDER = 'static/uploaded_images'
-# --- NOUVEAU: Dossier pour les images résultat avec masques ---
+# --- Dossier pour les images résultat avec masques ---
 RESULTS_FOLDER = 'static/results_images'
 ALLOWED_EXTENSIONS_IMAGES = {'png', 'jpg', 'jpeg'}
 
-# --- NOUVEAU: Configuration YOLOv8 ---
+# --- Configuration du modèle d'IA ---
 # --- !!! METTEZ ICI LE CHEMIN VERS VOTRE MODÈLE .pt !!! ---
-YOLO_MODEL_PATH = 'best.pt' # ou 'models/best.pt' etc.
-CONFIDENCE_THRESHOLD_YOLO = 0.4 # Seuil de confiance pour les détections YOLO
-CLASS_NAMES_YOLO = ["DREPANOCYTES", "ELLIPTOCYTES", "SCHIZOCYTES", "SAINS"] # Ajout de la classe SAINS
+MODEL_PATH = 'best.pt' # ou 'models/best.pt' etc.
+CONFIDENCE_THRESHOLD = 0.4 # Seuil de confiance pour les détections
+CLASS_NAMES = ["DREPANOCYTES", "ELLIPTOCYTES", "SCHIZOCYTES", "SAINS"] # Ajout de la classe SAINS
 
-# --- NOUVEAU: Chargement du modèle YOLOv8 (variable globale) ---
-model_yolo = None
-def load_yolo_model():
-    global model_yolo
+# --- Chargement du modèle d'IA (variable globale) ---
+ai_model = None
+def load_ai_model():
+    global ai_model
     try:
         # Créer le dossier de résultats s'il n'existe pas
         if not os.path.exists(RESULTS_FOLDER):
             os.makedirs(RESULTS_FOLDER)
             print(f"Dossier de résultats créé: {RESULTS_FOLDER}")
 
-        if os.path.exists(YOLO_MODEL_PATH):
-            model_yolo = YOLO(YOLO_MODEL_PATH)
+        if os.path.exists(MODEL_PATH):
+            ai_model = YOLO(MODEL_PATH)
             # Vous pouvez optionnellement faire une inférence rapide pour "chauffer" le modèle si nécessaire
-            # model_yolo.predict(np.zeros((640, 640, 3)), verbose=False)
-            print(f"Modèle YOLOv8 chargé avec succès depuis: {YOLO_MODEL_PATH}")
+            # ai_model.predict(np.zeros((640, 640, 3)), verbose=False)
+            print(f"Modèle d'IA chargé avec succès depuis: {MODEL_PATH}")
         else:
-            print(f"ERREUR: Fichier modèle YOLOv8 non trouvé à l'emplacement: {YOLO_MODEL_PATH}")
-            model_yolo = None
+            print(f"ERREUR: Fichier modèle d'IA non trouvé à l'emplacement: {MODEL_PATH}")
+            ai_model = None
     except Exception as e:
-        print(f"Erreur lors du chargement du modèle YOLOv8: {e}")
-        model_yolo = None
+        print(f"Erreur lors du chargement du modèle d'IA: {e}")
+        ai_model = None
 
-# Charger le modèle YOLO au démarrage
-load_yolo_model()
+# Charger le modèle d'IA au démarrage
+load_ai_model()
 
 # --- Supprimer ou commenter l'ancien chargement du modèle CNN ---
 # model_cnn = None
@@ -70,33 +72,68 @@ load_yolo_model()
 def allowed_image_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_IMAGES
 
-# --- Authentification (inchangé) ---
+# --- Landing Page ---
+@routes.route('/landing')
+def landing():
+    return render_template('landing.html')
+
+# --- Route principale pour rediriger vers la landing page si non connecté ---
+@routes.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('routes.dashboard'))
+    return redirect(url_for('routes.landing'))
+
+# --- Authentification (modifié pour gérer remember_me) ---
 @routes.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated: return redirect(url_for('routes.dashboard'))
+    if current_user.is_authenticated: 
+        return redirect(url_for('routes.dashboard'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and check_password_hash(user.password, form.password.data):
-            login_user(user); flash('Connexion réussie!', 'success'); return redirect(url_for('routes.dashboard'))
-        else: flash('Login incorrect.', 'danger')
+            login_user(user, remember=form.remember_me.data)
+            flash('Connexion réussie! Bienvenue sur MediScan.', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('routes.dashboard'))
+        else: 
+            flash('Nom d\'utilisateur ou mot de passe incorrect. Veuillez réessayer.', 'danger')
     return render_template('login.html', title='Connexion', form=form, logged_out_content=True)
 
 @routes.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated: return redirect(url_for('routes.dashboard'))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.password.data)
-        user = User(username=form.username.data, password=hashed_password)
-        db.session.add(user); db.session.commit()
-        flash('Compte créé avec succès!', 'success'); return redirect(url_for('routes.login'))
-    return render_template('register.html', title='Inscription', form=form, logged_out_content=True)
+    if current_user.is_authenticated:
+        return redirect(url_for('routes.dashboard'))
+    
+    try:
+        form = RegistrationForm()
+        print(f"DEBUG: Form created successfully: {form}")
+        
+        if form.validate_on_submit():
+            hashed_password = generate_password_hash(form.password.data)
+            user = User(username=form.username.data, password=hashed_password)
+            db.session.add(user)
+            db.session.commit()
+            flash('Compte créé avec succès! Bienvenue dans la communauté MediScan.', 'success')
+            flash('Vous pouvez maintenant vous connecter avec vos identifiants.', 'info')
+            return redirect(url_for('routes.login'))
+        
+        print(f"DEBUG: About to render template with form: {form}")
+        print(f"DEBUG: Form errors: {form.errors}")
+        return render_template('register_minimal.html', title='Inscription', form=form, logged_out_content=True)
+        
+    except Exception as e:
+        print(f"ERROR in register route: {str(e)}")
+        print(f"ERROR traceback: {traceback.format_exc()}")
+        return f"Error: {str(e)}", 500
 
 @routes.route('/logout')
 @login_required
 def logout():
-    logout_user(); flash('Déconnexion réussie.', 'info'); return redirect(url_for('routes.login'))
+    logout_user()
+    flash('Déconnexion réussie. À bientôt sur MediScan !', 'info')
+    return redirect(url_for('routes.landing'))
 
 @routes.route('/profile')
 @login_required
@@ -111,11 +148,6 @@ def profile():
 @login_required
 def dashboard():
     return render_template('index.html', title='Tableau de Bord - Analyse', dashboard_content=True)
-
-@routes.route('/')
-@login_required
-def index_redirect_dashboard():
-    return redirect(url_for('routes.dashboard'))
 
 @routes.route('/analyses')
 @login_required
@@ -134,7 +166,7 @@ def analyse_detail_page(analyse_id):
     # Le template 'analyse_detail.html' devra utiliser analyse.image_path pour l'image
     return render_template('analyse_detail.html', analyse=analyse, title=f"Détail Analyse #{analyse.id}")
 
-# --- Route Page d'Analyse (MODIFIÉE pour YOLOv8) ---
+# --- Route Page d'Analyse (MODIFIÉE pour l'IA) ---
 @routes.route('/analyse', methods=['GET', 'POST'])
 @login_required
 def analyse():
@@ -143,8 +175,8 @@ def analyse():
     image_filename_result = None # Nom du fichier image RÉSULTAT (avec masques)
 
     if request.method == 'POST':
-        if model_yolo is None:
-            flash("Erreur: Le modèle d'analyse YOLOv8 n'est pas chargé.", 'danger')
+        if ai_model is None:
+            flash("Erreur: Le modèle d'analyse d'IA n'est pas chargé.", 'danger')
             return render_template('index.html', title='Analyse', dashboard_content=True)
 
         if 'image_upload' not in request.files:
@@ -159,8 +191,8 @@ def analyse():
                     file_content = image_file.read()
                     original_filename = secure_filename(image_file.filename)
 
-                    # --- NOUVEAU: Analyse de l'image avec YOLOv8 ---
-                    resultat_analyse = analyse_image_yolo(file_content, original_filename)
+                    # --- Analyse de l'image avec l'IA ---
+                    resultat_analyse = analyse_image_ai(file_content, original_filename)
                     image_filename_result = resultat_analyse.get('output_image_filename') # Récupère nom fichier résultat
 
                     # Optionnel: Sauvegarder l'image originale si besoin (non nécessaire pour l'analyse elle-même)
@@ -185,10 +217,10 @@ def analyse():
                            image_filename=image_filename_result) # Utilise image_filename_result ici
 
 
-def analyse_image_yolo(image_file_content, original_filename):
-    global model_yolo
-    if model_yolo is None:
-        raise Exception("Le modèle YOLOv8 n'est pas chargé.")
+def analyse_image_ai(image_file_content, original_filename):
+    global ai_model
+    if ai_model is None:
+        raise Exception("Le modèle d'IA n'est pas chargé.")
 
     try:
         # Décoder l'image depuis les bytes
@@ -197,8 +229,8 @@ def analyse_image_yolo(image_file_content, original_filename):
         if img is None:
             raise ValueError("Impossible de décoder l'image.")
 
-        # Exécuter l'inférence YOLOv8
-        results = model_yolo.predict(img, conf=CONFIDENCE_THRESHOLD_YOLO, verbose=False)
+        # Exécuter l'inférence
+        results = ai_model.predict(img, conf=CONFIDENCE_THRESHOLD, verbose=False)
 
         num_detections = 0
         detected_diseases = set()
@@ -207,27 +239,16 @@ def analyse_image_yolo(image_file_content, original_filename):
         if results and hasattr(results[0], 'masks') and results[0].masks is not None:
             num_detections = len(results[0].boxes)
             if num_detections > 0:
-                # --- MODIFICATION ICI ---
-                # Utiliser plot() en désactivant les boîtes et les labels
-                output_img_array = results[0].plot(
-                    boxes=False,   # Ne pas dessiner les rectangles
-                    labels=False,  # Ne pas dessiner les textes (classe + confiance)
-                    masks=True     # Dessiner les masques (par défaut mais explicite)
-                    # Vous pouvez garder d'autres paramètres de style si vous le souhaitez
-                    # line_width=..., mask_alpha=..., etc.
-                )
-                # -----------------------
-
-                # Récupérer les classes détectées (la logique reste la même)
+                # Récupérer les classes détectées d'abord pour déterminer le statut
                 for box in results[0].boxes:
                     class_id = int(box.cls.item())
-                    if 0 <= class_id < len(CLASS_NAMES_YOLO):
-                        disease_name = CLASS_NAMES_YOLO[class_id]
+                    if 0 <= class_id < len(CLASS_NAMES):
+                        disease_name = CLASS_NAMES[class_id]
                         detected_diseases.add(disease_name)
                     else:
-                        print(f"Warning: Invalid class_id {class_id} detected in YOLO results.")
+                        print(f"Warning: Invalid class_id {class_id} detected in results.")
 
-        # Déterminer le statut et la recommandation (NOUVELLE LOGIQUE)
+        # Déterminer le statut et la recommandation
         if num_detections == 0:
             # Aucune détection du tout - cas d'erreur ou image non analysable
             final_status = "Indéterminé"
@@ -238,8 +259,10 @@ def analyse_image_yolo(image_file_content, original_filename):
             final_status = "Sain"
             recommandation = "Cellules saines détectées. Test négatif."
             detected_diseases_list = ["SAINS"]
+            # Pour les patients sains, garder l'image originale sans masques
+            output_img_array = img.copy()
         else:
-            # Seulement des maladies détectées
+            # Seulement des maladies détectées - appliquer les masques
             final_status = "Malade"
             detected_diseases_list = sorted(list(detected_diseases))
             reco_parts = []
@@ -252,19 +275,30 @@ def analyse_image_yolo(image_file_content, original_filename):
             if not reco_parts: 
                 reco_parts.append("Cellules anormales détectées. Examen médical requis.")
             recommandation = " ".join(reco_parts)
+            
+            # Appliquer les masques seulement pour les malades
+            if results and hasattr(results[0], 'masks') and results[0].masks is not None and num_detections > 0:
+                output_img_array = results[0].plot(
+                    boxes=False,   # Ne pas dessiner les rectangles
+                    labels=False,  # Ne pas dessiner les textes (classe + confiance)
+                    masks=True     # Dessiner les masques
+                )
 
 
-        # Sauvegarder l'image résultat (avec seulement les masques maintenant)
-        # ... (logique de sauvegarde inchangée) ...
+        # Sauvegarder l'image résultat
+        # Pour les patients sains: image originale
+        # Pour les patients malades: image avec masques
         base, ext = os.path.splitext(original_filename)
         unique_id = uuid.uuid4().hex[:8]
         output_filename = f"result_{base}_{unique_id}{ext}"
         output_image_path = os.path.join(current_app.config['RESULTS_FOLDER'], output_filename)
 
         try:
-            # Important: output_img_array contient maintenant l'image AVEC seulement les masques
             cv2.imwrite(output_image_path, output_img_array)
-            print(f"Image résultat (masques seulement) sauvegardée dans: {output_image_path}")
+            if final_status == "Sain":
+                print(f"Image résultat (originale) sauvegardée dans: {output_image_path}")
+            else:
+                print(f"Image résultat (avec masques) sauvegardée dans: {output_image_path}")
         except Exception as e_save:
             print(f"ERREUR lors de la sauvegarde de l'image résultat {output_filename}: {e_save}")
             output_filename = None
@@ -278,9 +312,9 @@ def analyse_image_yolo(image_file_content, original_filename):
         }
 
     except Exception as e:
-        print(f"Erreur dans analyse_image_yolo: {e}")
+        print(f"Erreur dans analyse_image_ai: {e}")
         print(f"Traceback: {traceback.format_exc()}")
-        raise Exception(f"Erreur interne lors de l'analyse YOLOv8: {e}")
+        raise Exception(f"Erreur interne lors de l'analyse: {e}")
 
 # --- Supprimer l'ancienne fonction analyse_image CNN ---
 # def analyse_image(image_file): ...
@@ -300,7 +334,7 @@ def save_analysis():
             patient_nom = request.form['patient_nom']
             patient_prenom = request.form['patient_prenom']
             patient_date_naissance_str = request.form['patient_date_naissance']
-            # --- NOUVEAU: Récupérer infos de l'analyse YOLO ---
+            # --- Récupérer infos de l'analyse d'IA ---
             output_image_filename = request.form['output_image_filename'] # Nom fichier résultat
             status = request.form['status'] # "Sain" ou "Malade"
             diseases_str = request.form['diseases'] # String séparée par des virgules
@@ -360,3 +394,69 @@ def send_result_image(filename):
     except Exception as e:
         print(f"Erreur lors de l'envoi de l'image résultat {filename}: {e}")
         return "Erreur serveur", 500
+
+# --- Route mot de passe oublié ---
+@routes.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('routes.dashboard'))
+    
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user:
+            # Générer un mot de passe temporaire
+            temp_password = generate_temp_password()
+            user.password = generate_password_hash(temp_password)
+            db.session.commit()
+            
+            # Stocker le mot de passe temporaire en session pour l'afficher
+            session['temp_password'] = temp_password
+            session['username'] = user.username
+            
+            flash(f'Un mot de passe temporaire a été généré: {temp_password}', 'success')
+            flash('Connectez-vous avec ce mot de passe temporaire et changez-le immédiatement.', 'info')
+            return redirect(url_for('routes.reset_password'))
+        else:
+            flash('Aucun compte trouvé avec ce nom d\'utilisateur.', 'danger')
+    
+    return render_template('forgot_password.html', title='Mot de passe oublié', form=form)
+
+# --- Route pour changer le mot de passe ---
+@routes.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    # Vérifier si l'utilisateur a le droit d'accéder à cette page
+    if 'temp_password' not in session and not current_user.is_authenticated:
+        flash('Accès non autorisé. Veuillez d\'abord demander une réinitialisation.', 'danger')
+        return redirect(url_for('routes.forgot_password'))
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        if 'username' in session:
+            # Réinitialisation après mot de passe oublié
+            user = User.query.filter_by(username=session['username']).first()
+            if user:
+                user.password = generate_password_hash(form.new_password.data)
+                db.session.commit()
+                
+                # Nettoyer la session
+                session.pop('temp_password', None)
+                session.pop('username', None)
+                
+                flash('Votre mot de passe a été mis à jour avec succès!', 'success')
+                flash('Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.', 'info')
+                return redirect(url_for('routes.login'))
+        elif current_user.is_authenticated:
+            # Changement de mot de passe depuis le profil
+            current_user.password = generate_password_hash(form.new_password.data)
+            db.session.commit()
+            flash('Votre mot de passe a été mis à jour avec succès!', 'success')
+            return redirect(url_for('routes.profile'))
+    
+    return render_template('reset_password.html', title='Nouveau mot de passe', form=form)
+
+def generate_temp_password(length=12):
+    """Génère un mot de passe temporaire sécurisé"""
+    characters = string.ascii_letters + string.digits + "!@#$%&*"
+    temp_password = ''.join(secrets.choice(characters) for _ in range(length))
+    return temp_password

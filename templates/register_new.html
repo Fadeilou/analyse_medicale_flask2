@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - MediScan</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="min-h-screen hero-gradient flex items-center justify-center p-2 sm:p-4">
+
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-10 hidden sm:block">
+        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25px 25px, white 2px, transparent 2px); background-size: 50px 50px;"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-md mx-auto">
+        <!-- Logo et titre -->
+        <div class="text-center mb-6 sm:mb-8 animate-fade-in px-4">
+            <a href="{{ url_for('routes.landing') }}" class="inline-flex items-center justify-center mb-4 sm:mb-6 text-white hover:text-blue-200 transition duration-300">
+                <i class="fas fa-microscope text-3xl sm:text-4xl mr-2 sm:mr-3"></i>
+                <span class="text-2xl sm:text-3xl font-bold">MediScan</span>
+            </a>
+            <h1 class="text-xl sm:text-2xl font-bold text-white mb-2">Créer un compte</h1>
+            <p class="text-sm sm:text-base text-blue-100">Rejoignez la révolution de l'analyse médicale</p>
+        </div>
+
+        <!-- Formulaire d'inscription -->
+        <div class="card animate-slide-in mx-2 sm:mx-0">
+            <!-- Messages Flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'danger' else category }} mb-4 sm:mb-6">
+                            <div class="flex items-start">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'info-circle' if category == 'info' else 'check-circle' if category == 'success' else 'exclamation-triangle' }} mr-2 mt-1 flex-shrink-0"></i>
+                                <span class="text-sm sm:text-base">{{ message }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="post" class="space-y-4 sm:space-y-6">
+                {{ form.hidden_tag() }}
+                
+                <!-- Nom d'utilisateur -->
+                <div>
+                    {{ form.username.label(class="form-label text-sm sm:text-base") }}
+                    {{ form.username(class="form-input text-sm sm:text-base" + (" border-red-300" if form.username.errors else ""), placeholder="Choisissez un nom d'utilisateur unique") }}
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="form-error text-xs sm:text-sm">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-xs sm:text-sm text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            3-20 caractères, lettres, chiffres et underscores uniquement
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Mot de passe -->
+                <div>
+                    {{ form.password.label(class="form-label text-sm sm:text-base") }}
+                    <div class="relative">
+                        {{ form.password(class="form-input text-sm sm:text-base pr-10" + (" border-red-300" if form.password.errors else ""), placeholder="Créez un mot de passe sécurisé", id="password") }}
+                        <button type="button" onclick="togglePassword('password', 'eye-icon-1')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye text-sm" id="eye-icon-1"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <div class="form-error text-xs sm:text-sm">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-xs sm:text-sm text-gray-500 mt-1">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            Minimum 6 caractères pour une sécurité optimale
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Confirmation mot de passe -->
+                <div>
+                    {{ form.confirm_password.label(class="form-label text-sm sm:text-base") }}
+                    <div class="relative">
+                        {{ form.confirm_password(class="form-input text-sm sm:text-base pr-10" + (" border-red-300" if form.confirm_password.errors else ""), placeholder="Confirmez votre mot de passe", id="confirm_password") }}
+                        <button type="button" onclick="togglePassword('confirm_password', 'eye-icon-2')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye text-sm" id="eye-icon-2"></i>
+                        </button>
+                    </div>
+                    {% if form.confirm_password.errors %}
+                        {% for error in form.confirm_password.errors %}
+                            <div class="form-error text-xs sm:text-sm">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Conditions d'utilisation -->
+                <div class="flex items-start space-x-2 text-sm">
+                    <input type="checkbox" id="terms" required class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mt-1 flex-shrink-0">
+                    <label for="terms" class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        J'accepte les 
+                        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">conditions d'utilisation</a> 
+                        et la 
+                        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">politique de confidentialité</a>
+                    </label>
+                </div>
+
+                <!-- Bouton d'inscription -->
+                <button type="submit" class="btn-primary w-full text-sm sm:text-base">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Créer mon compte
+                </button>
+            </form>
+
+            <!-- Lien de connexion -->
+            <div class="mt-4 sm:mt-6 text-center">
+                <p class="text-sm sm:text-base text-gray-600">
+                    Vous avez déjà un compte ? 
+                    <a href="{{ url_for('routes.login') }}" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline">
+                        Connectez-vous ici
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Lien retour à l'accueil -->
+        <div class="text-center mt-4 sm:mt-6 animate-fade-in px-4">
+            <a href="{{ url_for('routes.landing') }}" class="text-blue-200 hover:text-white transition duration-300 text-sm sm:text-base">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Avantages de l'inscription -->
+        <div class="mt-6 sm:block animate-fade-in mx-2">
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
+                <h3 class="text-white font-semibold mb-2 text-center text-sm">
+                    <i class="fas fa-star mr-2"></i>
+                    Pourquoi rejoindre MediScan ?
+                </h3>
+                <div class="grid grid-cols-2 gap-2 text-xs text-blue-100">
+                    <div class="flex items-center">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        <span>Analyses illimitées</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        <span>Historique complet</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        <span>Interface moderne</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        <span>Support 24/7</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(fieldId, iconId) {
+            const passwordField = document.getElementById(fieldId);
+            const eyeIcon = document.getElementById(iconId);
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Validation en temps réel
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmPassword = document.getElementById('confirm_password');
+            if (confirmPassword) {
+                confirmPassword.addEventListener('input', function() {
+                    const password = document.getElementById('password').value;
+                    const confirmPasswordValue = this.value;
+                    
+                    if (confirmPasswordValue && password !== confirmPasswordValue) {
+                        this.classList.add('border-red-300');
+                        this.classList.remove('border-gray-300');
+                    } else {
+                        this.classList.remove('border-red-300');
+                        this.classList.add('border-gray-300');
+                    }
+                });
+            }
+
+            // Auto-hide alerts after 5 seconds
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => alert.remove(), 300);
+                });
+            }, 5000);
+        });
+
+        // Ajustement responsive
+        function adjustForMobile() {
+            const isMobile = window.innerWidth < 640;
+            const elements = document.querySelectorAll('.animate-fade-in, .animate-slide-in');
+            
+            elements.forEach(el => {
+                if (isMobile) {
+                    el.style.animationDuration = '0.4s';
+                } else {
+                    el.style.animationDuration = '0.6s';
+                }
+            });
+        }
+
+        window.addEventListener('resize', adjustForMobile);
+        document.addEventListener('DOMContentLoaded', adjustForMobile);
+    </script>
+</body>
+</html>

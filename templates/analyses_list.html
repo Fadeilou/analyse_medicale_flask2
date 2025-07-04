@@ -3,33 +3,348 @@
 {% block title %}Liste des Analyses{% endblock %}
 
 {% block content %}
-    <div class="bg-white p-8 rounded-lg shadow-md dark:bg-gray-800">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Liste des Analyses</h1>
+    <div class="container mx-auto px-4 py-6 sm:py-8">
+        <!-- Header avec actions -->
+        <div class="card mb-6 sm:mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-list-ul mr-3 text-blue-500"></i>
+                        Mes Analyses
+                    </h1>
+                    <p class="text-gray-600">Consultez l'historique complet de vos analyses médicales</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                    <a href="{{ url_for('routes.index') }}" class="btn-primary text-sm sm:text-base">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nouvelle analyse
+                    </a>
+                    <button class="btn-outline text-sm sm:text-base" onclick="exportAnalyses()">
+                        <i class="fas fa-download mr-2"></i>
+                        Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
 
+        <!-- Filtres et recherche -->
+        <div class="card mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="form-label text-sm">Rechercher</label>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Nom du patient, date..." 
+                               class="form-input text-sm pl-10" onkeyup="filterAnalyses()">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="form-label text-sm">Statut</label>
+                    <select id="statusFilter" class="form-input text-sm" onchange="filterAnalyses()">
+                        <option value="">Tous les statuts</option>
+                        <option value="positif">Positif</option>
+                        <option value="negatif">Négatif</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="form-label text-sm">Période</label>
+                    <select id="periodFilter" class="form-input text-sm" onchange="filterAnalyses()">
+                        <option value="">Toutes les périodes</option>
+                        <option value="today">Aujourd'hui</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                        <option value="year">Cette année</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="form-label text-sm">Trier par</label>
+                    <select id="sortFilter" class="form-input text-sm" onchange="sortAnalyses()">
+                        <option value="date_desc">Date (plus récent)</option>
+                        <option value="date_asc">Date (plus ancien)</option>
+                        <option value="patient_asc">Patient (A-Z)</option>
+                        <option value="patient_desc">Patient (Z-A)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques rapides -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">{{ analyses|length if analyses else 0 }}</div>
+                    <div class="text-sm text-gray-600">Total</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">
+                        {{ analyses|selectattr("test_positif", "equalto", false)|list|length if analyses else 0 }}
+                    </div>
+                    <div class="text-sm text-gray-600">Négatifs</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-600">
+                        {{ analyses|selectattr("test_positif", "equalto", true)|list|length if analyses else 0 }}
+                    </div>
+                    <div class="text-sm text-gray-600">Positifs</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600">{{ analyses|length if analyses else 0 }}</div>
+                    <div class="text-sm text-gray-600">Ce mois</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des analyses -->
         {% if analyses %}
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                {% for analyse in analyses %}
-                    <li class="py-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                                    Patient: {{ analyse.patient.nom }} {{ analyse.patient.prenom }}
-                                </p>
-                                <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                                    Date: {{ analyse.date_analyse.strftime('%d-%m-%Y %H:%M') }}
-                                </p>
-                            </div>
-                            <div class="ml-4 flex-shrink-0">
-                                <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 detail-button dark:bg-gray-700 dark:border-gray-700 dark:text-white dark:hover:bg-gray-600 dark:hover:text-white">
-                                    Voir Détails
-                                </a>
-                            </div>
+            <div class="card">
+                <div class="overflow-x-auto">
+                    <div class="min-w-full" id="analysesContainer">
+                        <!-- Header responsive pour mobile -->
+                        <div class="hidden sm:grid grid-cols-5 gap-4 p-4 bg-gray-50 border-b text-sm font-medium text-gray-600">
+                            <div>Patient</div>
+                            <div>Date d'analyse</div>
+                            <div>Résultat</div>
+                            <div>Type d'anomalie</div>
+                            <div class="text-center">Actions</div>
                         </div>
-                    </li>
-                {% endfor %}
-            </ul>
+                        
+                        <!-- Liste des analyses -->
+                        <div class="divide-y divide-gray-200">
+                            {% for analyse in analyses %}
+                                <div class="analyse-item p-4 hover:bg-gray-50 transition-colors" 
+                                     data-patient="{{ analyse.patient.nom }} {{ analyse.patient.prenom }}"
+                                     data-date="{{ analyse.date_analyse.strftime('%Y-%m-%d') }}"
+                                     data-status="{{ 'positif' if analyse.test_positif else 'negatif' }}">
+                                    
+                                    <!-- Version mobile -->
+                                    <div class="sm:hidden">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex-1">
+                                                <h3 class="font-semibold text-gray-800 text-base">
+                                                    {{ analyse.patient.nom }} {{ analyse.patient.prenom }}
+                                                </h3>
+                                                <p class="text-sm text-gray-600">
+                                                    <i class="fas fa-calendar mr-1"></i>
+                                                    {{ analyse.date_analyse.strftime('%d/%m/%Y à %H:%M') }}
+                                                </p>
+                                            </div>
+                                            
+                                            <div class="ml-4">
+                                                {% if analyse.test_positif %}
+                                                    <span class="badge badge-danger">
+                                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                        Positif
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge badge-success">
+                                                        <i class="fas fa-check-circle mr-1"></i>
+                                                        Négatif
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        {% if analyse.test_positif and analyse.type_anomalie %}
+                                            <div class="mb-3">
+                                                <span class="text-sm text-gray-600">Anomalie:</span>
+                                                <span class="text-sm font-medium text-red-600 ml-1">{{ analyse.type_anomalie }}</span>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="flex justify-end">
+                                            <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}" 
+                                               class="btn-primary btn-sm">
+                                                <i class="fas fa-eye mr-1"></i>
+                                                Voir détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Version desktop -->
+                                    <div class="hidden sm:grid grid-cols-5 gap-4 items-center">
+                                        <div>
+                                            <div class="font-semibold text-gray-800">
+                                                {{ analyse.patient.nom }} {{ analyse.patient.prenom }}
+                                            </div>
+                                            {% if analyse.patient.date_naissance %}
+                                                <div class="text-sm text-gray-500">
+                                                    <i class="fas fa-birthday-cake mr-1"></i>
+                                                    {{ analyse.patient.date_naissance }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="text-sm text-gray-600">
+                                            {{ analyse.date_analyse.strftime('%d/%m/%Y') }}<br>
+                                            <span class="text-xs text-gray-500">{{ analyse.date_analyse.strftime('%H:%M') }}</span>
+                                        </div>
+                                        
+                                        <div>
+                                            {% if analyse.test_positif %}
+                                                <span class="badge badge-danger">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    Positif
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-check-circle mr-1"></i>
+                                                    Négatif
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="text-sm">
+                                            {% if analyse.test_positif and analyse.type_anomalie %}
+                                                <span class="text-red-600 font-medium">{{ analyse.type_anomalie }}</span>
+                                            {% else %}
+                                                <span class="text-gray-400">-</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="text-center">
+                                            <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}" 
+                                               class="btn-primary btn-sm">
+                                                <i class="fas fa-eye mr-1"></i>
+                                                Détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pagination (si nécessaire) -->
+                <div class="px-4 py-3 border-t">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                            Affichage de {{ analyses|length }} analyse{{ 's' if analyses|length > 1 else '' }}
+                        </div>
+                        <div class="flex space-x-2">
+                            <!-- Boutons de pagination ici si nécessaire -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% else %}
-            <p class="dark:text-white">Aucune analyse enregistrée pour le moment.</p>
+            <!-- État vide -->
+            <div class="card text-center py-12">
+                <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                    <i class="fas fa-vials text-3xl text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Aucune analyse enregistrée</h3>
+                <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                    Commencez dès maintenant à analyser vos échantillons médicaux avec notre technologie avancée.
+                </p>
+                <a href="{{ url_for('routes.index') }}" class="btn-primary">
+                    <i class="fas fa-plus mr-2"></i>
+                    Créer ma première analyse
+                </a>
+            </div>
         {% endif %}
     </div>
+
+    <script>
+        function filterAnalyses() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const periodFilter = document.getElementById('periodFilter').value;
+            const items = document.querySelectorAll('.analyse-item');
+            
+            items.forEach(item => {
+                const patient = item.dataset.patient.toLowerCase();
+                const status = item.dataset.status;
+                const date = new Date(item.dataset.date);
+                const now = new Date();
+                
+                let showItem = true;
+                
+                // Filtre de recherche
+                if (searchTerm && !patient.includes(searchTerm)) {
+                    showItem = false;
+                }
+                
+                // Filtre de statut
+                if (statusFilter && status !== statusFilter) {
+                    showItem = false;
+                }
+                
+                // Filtre de période
+                if (periodFilter) {
+                    const daysDiff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+                    switch(periodFilter) {
+                        case 'today':
+                            if (daysDiff > 0) showItem = false;
+                            break;
+                        case 'week':
+                            if (daysDiff > 7) showItem = false;
+                            break;
+                        case 'month':
+                            if (daysDiff > 30) showItem = false;
+                            break;
+                        case 'year':
+                            if (daysDiff > 365) showItem = false;
+                            break;
+                    }
+                }
+                
+                item.style.display = showItem ? 'block' : 'none';
+            });
+        }
+        
+        function sortAnalyses() {
+            const sortType = document.getElementById('sortFilter').value;
+            const container = document.getElementById('analysesContainer');
+            const items = Array.from(container.querySelectorAll('.analyse-item'));
+            
+            items.sort((a, b) => {
+                switch(sortType) {
+                    case 'date_asc':
+                        return new Date(a.dataset.date) - new Date(b.dataset.date);
+                    case 'date_desc':
+                        return new Date(b.dataset.date) - new Date(a.dataset.date);
+                    case 'patient_asc':
+                        return a.dataset.patient.localeCompare(b.dataset.patient);
+                    case 'patient_desc':
+                        return b.dataset.patient.localeCompare(a.dataset.patient);
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Réorganiser les éléments
+            const parent = items[0].parentNode;
+            items.forEach(item => parent.appendChild(item));
+        }
+        
+        function exportAnalyses() {
+            // Logique d'export des analyses
+            alert('Fonctionnalité d\'export en cours de développement');
+        }
+        
+        // Animation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const items = document.querySelectorAll('.analyse-item');
+            items.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 50);
+            });
+        });
+    </script>
 {% endblock %}

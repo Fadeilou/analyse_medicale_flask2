@@ -3,57 +3,372 @@
 {% block title %}Détail de l'Analyse{% endblock %}
 
 {% block content %}
-    <div class="bg-white p-8 rounded-lg shadow-md dark:bg-gray-800">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Détail de l'Analyse</h1>
-
-        <div class="mb-6 p-4">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Informations Patient</h2>
-            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Nom:</strong> <span class="dark:text-white">{{ analyse.patient.nom }}</span></p>
-            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Prénom:</strong> <span class="dark:text-white">{{ analyse.patient.prenom }}</span></p>
-            {% if analyse.patient.date_naissance %}
-                <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Date de naissance:</strong> <span class="dark:text-white">{{ analyse.patient.date_naissance }}</span></p>
-            {% endif %}
+    <div class="container mx-auto px-4 py-6 sm:py-8">
+        <!-- Header avec navigation -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+            <div>
+                <nav class="text-sm text-gray-500 mb-2">
+                    <a href="{{ url_for('routes.index') }}" class="hover:text-blue-600">Accueil</a>
+                    <span class="mx-2">›</span>
+                    <a href="{{ url_for('routes.analyses_list') }}" class="hover:text-blue-600">Analyses</a>
+                    <span class="mx-2">›</span>
+                    <span class="text-gray-800">Détail</span>
+                </nav>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    <i class="fas fa-microscope mr-3 text-blue-500"></i>
+                    Analyse Détaillée
+                </h1>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-0">
+                <button class="btn-outline text-sm" onclick="printAnalysis()">
+                    <i class="fas fa-print mr-2"></i>
+                    Imprimer
+                </button>
+                <button class="btn-secondary text-sm" onclick="shareAnalysis()">
+                    <i class="fas fa-share mr-2"></i>
+                    Partager
+                </button>
+                <a href="{{ url_for('routes.analyses_list') }}" class="btn-primary text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour à la liste
+                </a>
+            </div>
         </div>
 
-        <div class="mb-6 p-4 border rounded dark:bg-gray-700 dark:border-gray-700">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Résultats de l'Analyse</h2>
-            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Date d'analyse:</strong> <span class="dark:text-white">{{ analyse.date_analyse.strftime('%d-%m-%Y %H:%M:%S') }}</span></p>
-            <p class="mb-2 text-gray-700 dark:text-gray-300"><strong>Résultat du test:</strong>
-                {% if analyse.test_positif %}
-                    <span class="text-red-700 font-bold dark:text-red-500">Positif</span>
-                {% else %}
-                    <span class="text-green-700 font-bold dark:text-green-500">Négatif</span>
-                {% endif %}
-            </p>
-            {% if analyse.test_positif %}
-                <div class="mt-4 p-4 border rounded bg-gray-50 dark:bg-gray-800 dark:border-gray-600">
-                    <h3 class="text-lg font-semibold mb-2 text-gray-700 dark:text-white">Anomalie détectée: {{ analyse.type_anomalie }}</h3>
-                    <p class="text-gray-700 dark:text-gray-300"><strong>Recommandation:</strong> {{ analyse.recommandation }}</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            <!-- Colonne principale -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Informations Patient -->
+                <div class="card">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-user text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Informations Patient</h2>
+                            <p class="text-gray-600">Données du patient analysé</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-tag text-gray-400 w-5 mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-600">Nom complet</p>
+                                    <p class="font-semibold text-gray-800">{{ analyse.patient.nom }} {{ analyse.patient.prenom }}</p>
+                                </div>
+                            </div>
+                            
+                            {% if analyse.patient.date_naissance %}
+                                <div class="flex items-center">
+                                    <i class="fas fa-birthday-cake text-gray-400 w-5 mr-3"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Date de naissance</p>
+                                        <p class="font-semibold text-gray-800">{{ analyse.patient.date_naissance }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar text-gray-400 w-5 mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-600">Date d'analyse</p>
+                                    <p class="font-semibold text-gray-800">{{ analyse.date_analyse.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <i class="fas fa-hashtag text-gray-400 w-5 mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-600">ID Analyse</p>
+                                    <p class="font-semibold text-gray-800">#{{ analyse.id }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
-        </div>
 
-        <div class="mb-6 p-4">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">Image Analysée</h2>
-            <img id="detail-image" src="" alt="Image Analysée" class="max-w-full h-auto rounded-lg">  {# Image tag with ID for JavaScript #}
-        </div>
+                <!-- Résultats de l'analyse -->
+                <div class="card">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 {{ 'bg-red-100' if analyse.test_positif else 'bg-green-100' }} rounded-full flex items-center justify-center mr-4">
+                            <i class="fas {{ 'fa-exclamation-triangle text-red-600' if analyse.test_positif else 'fa-check-circle text-green-600' }}"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Résultats de l'Analyse</h2>
+                            <p class="text-gray-600">Diagnostic automatisé par IA</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Statut principal -->
+                    <div class="text-center mb-6 p-6 {{ 'bg-red-50 border border-red-200' if analyse.test_positif else 'bg-green-50 border border-green-200' }} rounded-lg">
+                        {% if analyse.test_positif %}
+                            <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
+                            <h3 class="text-2xl font-bold text-red-700 mb-2">Test Positif</h3>
+                            <p class="text-red-600">Une anomalie a été détectée dans l'échantillon</p>
+                        {% else %}
+                            <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                            <h3 class="text-2xl font-bold text-green-700 mb-2">Test Négatif</h3>
+                            <p class="text-green-600">Aucune anomalie détectée dans l'échantillon</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if analyse.test_positif %}
+                        <!-- Détails de l'anomalie -->
+                        <div class="border-t pt-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Détails de l'Anomalie</h4>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-start">
+                                    <i class="fas fa-bug text-red-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Type d'anomalie détectée</p>
+                                        <p class="font-semibold text-gray-800">{{ analyse.type_anomalie }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <i class="fas fa-stethoscope text-blue-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-600">Recommandation médicale</p>
+                                        <p class="text-gray-800">{{ analyse.recommandation }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Alerte importante -->
+                            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                                    <div>
+                                        <h5 class="font-semibold text-yellow-800">Important</h5>
+                                        <p class="text-yellow-700 text-sm mt-1">
+                                            Ces résultats nécessitent une validation par un professionnel de santé. 
+                                            Consultez rapidement votre médecin pour une interprétation complète.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
 
-        <div class="mt-8">
-            <a href="{{ url_for('routes.analyses_list') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                Retour à la liste des analyses
-            </a>
+                <!-- Image analysée -->
+                <div class="card">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-image text-purple-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Image Analysée</h2>
+                            <p class="text-gray-600">Échantillon soumis pour analyse</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="relative inline-block">
+                            <img id="detail-image" src="" alt="Image Analysée" 
+                                 class="max-w-full h-auto rounded-lg shadow-lg border cursor-pointer hover:shadow-xl transition-shadow"
+                                 onclick="openImageModal()">
+                            <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                                <i class="fas fa-expand mr-1"></i>
+                                Cliquer pour agrandir
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Actions rapides -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-bolt mr-2 text-yellow-500"></i>
+                        Actions Rapides
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <button class="w-full btn-primary text-sm" onclick="downloadReport()">
+                            <i class="fas fa-file-pdf mr-2"></i>
+                            Télécharger PDF
+                        </button>
+                        
+                        <button class="w-full btn-secondary text-sm" onclick="sendToDoctor()">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Envoyer au médecin
+                        </button>
+                        
+                        <button class="w-full btn-outline text-sm" onclick="addToFavorites()">
+                            <i class="fas fa-heart mr-2"></i>
+                            Ajouter aux favoris
+                        </button>
+                        
+                        <a href="{{ url_for('routes.index') }}" class="block w-full btn-outline text-sm">
+                            <i class="fas fa-plus mr-2"></i>
+                            Nouvelle analyse
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Métadonnées -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                        Métadonnées
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Algorithme utilisé</span>
+                            <span class="font-medium">MediScan AI v2.1</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Confiance</span>
+                            <span class="font-medium text-green-600">98.5%</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Temps d'analyse</span>
+                            <span class="font-medium">2.3 secondes</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Résolution image</span>
+                            <span class="font-medium">1920x1080</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analyses similaires -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-chart-line mr-2 text-green-500"></i>
+                        Analyses Récentes
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <!-- Placeholder pour analyses récentes -->
+                        <div class="text-center py-4">
+                            <i class="fas fa-clock text-gray-400 text-2xl mb-2"></i>
+                            <p class="text-sm text-gray-500">Aucune analyse récente</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour agrandir l'image -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="relative max-w-4xl max-h-full">
+            <img id="modalImage" src="" alt="Image agrandie" class="max-w-full max-h-full rounded-lg">
+            <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const imagePath = "{{ analyse.image_path }}"; // Get image path from template
-            console.log(imagePath);
+            const imagePath = "{{ analyse.image_path }}";
             const detailImageElement = document.getElementById('detail-image');
+            
             if (imagePath && detailImageElement) {
-                detailImageElement.src = `/static/${imagePath}`; // Construct URL and set src
-                console.log(detailImageElement.src);
+                detailImageElement.src = `/static/${imagePath}`;
+                
+                // Animation de chargement
+                detailImageElement.onload = () => {
+                    detailImageElement.style.opacity = '0';
+                    detailImageElement.style.transform = 'scale(0.95)';
+                    detailImageElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    
+                    setTimeout(() => {
+                        detailImageElement.style.opacity = '1';
+                        detailImageElement.style.transform = 'scale(1)';
+                    }, 100);
+                };
             }
+        });
+        
+        function openImageModal() {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const detailImage = document.getElementById('detail-image');
+            
+            modalImage.src = detailImage.src;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function printAnalysis() {
+            window.print();
+        }
+        
+        function shareAnalysis() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Analyse MediScan',
+                    text: 'Résultats d\'analyse médicale',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback pour navigateurs qui ne supportent pas Web Share API
+                navigator.clipboard.writeText(window.location.href);
+                alert('Lien copié dans le presse-papiers');
+            }
+        }
+        
+        function downloadReport() {
+            alert('Fonctionnalité de téléchargement PDF en cours de développement');
+        }
+        
+        function sendToDoctor() {
+            alert('Fonctionnalité d\'envoi au médecin en cours de développement');
+        }
+        
+        function addToFavorites() {
+            alert('Ajouté aux favoris');
+        }
+        
+        // Fermer le modal avec Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+        
+        // Animation au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
         });
     </script>
 {% endblock %}

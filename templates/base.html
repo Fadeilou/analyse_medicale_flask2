@@ -2,59 +2,78 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Analyse Médicale{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if title %}{{ title }} - MediScan{% else %}MediScan - Analyse Médicale Intelligente{% endif %}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="description" content="MediScan - Plateforme d'analyse médicale intelligente utilisant l'IA pour la détection automatique d'anomalies cellulaires.">
 </head>
-<body class="bg-gray-100 h-screen">
+<body class="bg-gray-50 font-inter">
 
-    <div class="flex flex-col min-h-screen"> {# Main flex container added here #}
-
-        <!-- Header (Inclusion du fichier header.html) -->
+    <div class="flex flex-col min-h-screen">
+        <!-- Header -->
         {% include 'header.html' %}
 
         <!-- Main Content Area -->
-        <div class="flex pt-16 overflow-hidden bg-gray-50 dark:bg-gray-900 flex-grow"> {# flex-grow added to content wrapper #}
-            {% include 'sidebar.html' %}
+        <div class="flex pt-16 overflow-hidden bg-gray-50 flex-grow">
+            {% if dashboard_content %}
+                {% include 'sidebar.html' %}
+            {% endif %}
             
-               <div class="relative w-full h-full overflow-y-auto bg-gray-50 lg:ml-64 dark:bg-gray-900">
-                    <!-- Sidebar (Inclusion du fichier sidebar.html) -->
-                    
-
-                    <!-- Dashboard Content -->
-                    <main class="flex-1 bg-gray-100 p-8">
-                        <!-- {% with messages = get_flashed_messages(with_categories=true) %}
-                            {% if messages %}
-                                <div class="container mx-auto px-4 py-2 mt-4">
-                                    {% for category, message in messages %}
-                                        <div class="bg-{{ category if category != 'danger' else 'red' }}-100 border border-{{ category if category != 'danger' else 'red' }}-400 text-{{ category if category != 'danger' else 'red' }}-700 px-4 py-3 rounded relative mb-4" role="alert">
-                                            <strong class="font-bold">{{ category|capitalize }}!</strong>
-                                            <span class="block sm:inline">{{ message }}</span>
+            <div class="relative w-full h-full overflow-y-auto bg-gray-50 {% if dashboard_content %}lg:ml-64{% endif %}">
+                <!-- Main Content -->
+                <main class="{% if dashboard_content %}flex-1 bg-gray-50 p-6{% else %}flex-1{% endif %}">
+                    <!-- Messages Flash améliorés -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div class="container mx-auto px-4 py-2 mb-6">
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'danger' else category }} animate-slide-in" role="alert">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'info-circle' if category == 'info' else 'check-circle' if category == 'success' else 'exclamation-triangle' }} mr-3"></i>
+                                            <div>
+                                                <strong class="font-semibold">{{ category|title }}</strong>
+                                                <span class="block sm:inline ml-1">{{ message }}</span>
+                                            </div>
+                                            <button type="button" class="ml-auto text-xl leading-none font-semibold opacity-70 hover:opacity-100" onclick="this.parentElement.parentElement.remove()">
+                                                &times;
+                                            </button>
                                         </div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        {% endwith %} -->
-                        {% block content %}
-                            {# Content spécifique du dashboard (par défaut, contenu de l'analyse) #}
-                        {% endblock %}
-                    </main>
-                </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
 
-                
-
-            
+                    {% block content %}
+                        {# Content spécifique de chaque page #}
+                    {% endblock %}
+                </main>
+            </div>
         </div>
 
-        <!-- Footer (Inclusion du fichier footer.html) -->
-        {% include 'footer.html' %}
+        <!-- Footer -->
+        {% if dashboard_content %}
+            {% include 'footer.html' %}
+        {% endif %}
+    </div>
 
-    </div>  {# Closing tag for the main flex container #}
+    <!-- Backdrop pour la sidebar mobile -->
+    <div id="sidebarBackdrop" tabindex="-1" class="fixed inset-0 z-10 hidden bg-gray-900/50 lg:hidden"></div>
 
-      <!-- Backdrop pour la sidebar mobile (caché par défaut, ID 'sidebarBackdrop') -->
-      <div id="sidebarBackdrop" tabindex="-1" class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90 lg:hidden"></div>
-
-      <script src="{{ url_for('static', filename='script.js') }}"></script> {# Inclusion du fichier script.js à la fin du body #}
-
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Auto-hide flash messages after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-10px)';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
+    </script>
 </body>
 </html>

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - MediScan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* CSS spécifique pour la page register */
+        * {
+            box-sizing: border-box;
+        }
+        
+        .register-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+        
+        .register-content {
+            width: 100%;
+            max-width: 32rem;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .register-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: white;
+        }
+        
+        .register-header a {
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            transition: color 0.3s;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .register-header a:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .register-form {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color, #3b82f6);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+        
+        .checkbox-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 0;
+        }
+        
+        .checkbox-section input[type="checkbox"] {
+            margin-top: 0.25rem;
+            flex-shrink: 0;
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .checkbox-section label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.5;
+            word-wrap: break-word;
+            flex: 1;
+        }
+        
+        .checkbox-section a {
+            color: var(--primary-color, #3b82f6);
+            text-decoration: none;
+        }
+        
+        .checkbox-section a:hover {
+            text-decoration: underline;
+        }
+        
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.25rem;
+            z-index: 1;
+        }
+        
+        .password-toggle:hover {
+            color: #374151;
+        }
+        
+        .error-text {
+            color: var(--danger-color, #ef4444);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .help-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .link-section {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #6b7280;
+        }
+        
+        .link-section a {
+            color: var(--primary-color, #3b82f6);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .link-section a:hover {
+            text-decoration: underline;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        
+        .back-link a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-link a:hover {
+            color: white;
+        }
+        
+        .benefits-section {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+        
+        .benefits-title {
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.25rem 0;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary-color, #3b82f6);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-color-dark, #2563eb);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .alert-danger {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        
+        .alert-success {
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+        
+        .alert-info {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+        }
+        
+        /* Media queries pour la responsivité */
+        @media (max-width: 768px) {
+            .register-container {
+                padding: 0.5rem;
+                align-items: flex-start;
+                padding-top: 2rem;
+            }
+            
+            .register-content {
+                max-width: 100%;
+            }
+            
+            .card {
+                padding: 1.5rem;
+                border-radius: 0.75rem;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .register-header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .register-header a span {
+                font-size: 1.75rem;
+            }
+            
+            .form-input {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+            
+            .benefits-section {
+                margin-top: 1.5rem;
+                padding: 1.25rem;
+            }
+            
+            .checkbox-section {
+                gap: 0.5rem;
+            }
+            
+            .checkbox-section label {
+                font-size: 0.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 0.25rem;
+                padding-top: 1rem;
+            }
+            
+            .card {
+                padding: 1.25rem;
+            }
+            
+            .register-header {
+                margin-bottom: 1.5rem;
+            }
+            
+            .register-header h1 {
+                font-size: 1.5rem;
+                margin: 0.25rem 0;
+            }
+            
+            .register-header a span {
+                font-size: 1.5rem;
+            }
+            
+            .form-section {
+                margin-bottom: 1.25rem;
+            }
+            
+            .benefits-section {
+                padding: 1rem;
+            }
+            
+            .benefit-item {
+                font-size: 0.8rem;
+                gap: 0.5rem;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .register-header a {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .checkbox-section {
+                align-items: flex-start;
+            }
+            
+            .checkbox-section label {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body class="hero-gradient">
+    <div class="register-container">
+        <div class="register-content">
+            <!-- Logo et titre -->
+            <div class="register-header animate-fade-in">
+                <a href="{{ url_for('routes.landing') }}">
+                    <i class="fas fa-microscope" style="font-size: 2rem; margin-right: 0.75rem;"></i>
+                    <span style="font-size: 2rem; font-weight: bold;">MediScan</span>
+                </a>
+                <h1 style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;">Créer un compte</h1>
+                <p style="color: rgba(255, 255, 255, 0.8);">Rejoignez la révolution de l'analyse médicale</p>
+            </div>
+
+            <!-- Formulaire d'inscription -->
+            <div class="card animate-slide-in">
+                <!-- Messages Flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'danger' else category }}" style="margin-bottom: 1.5rem;">
+                                <div style="display: flex; align-items: flex-start;">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'info-circle' if category == 'info' else 'check-circle' if category == 'success' else 'exclamation-triangle' }}" style="margin-right: 0.5rem; margin-top: 0.125rem; flex-shrink: 0;"></i>
+                                    <span>{{ message }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="post" class="register-form">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Nom d'utilisateur -->
+                    <div class="form-section">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-input", placeholder="Choisissez un nom d'utilisateur unique") }}
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <div class="error-text">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>{{ error }}</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                <span>3-20 caractères, lettres, chiffres et underscores uniquement</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Mot de passe -->
+                    <div class="form-section">
+                        {{ form.password.label(class="form-label") }}
+                        <div class="password-container">
+                            {{ form.password(class="form-input", placeholder="Créez un mot de passe sécurisé", id="password", style="padding-right: 3rem;") }}
+                            <button type="button" class="password-toggle" onclick="togglePassword('password', 'eye-icon-1')">
+                                <i class="fas fa-eye" id="eye-icon-1"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <div class="error-text">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>{{ error }}</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="help-text">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Minimum 6 caractères pour une sécurité optimale</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Confirmation mot de passe -->
+                    <div class="form-section">
+                        {{ form.confirm_password.label(class="form-label") }}
+                        <div class="password-container">
+                            {{ form.confirm_password(class="form-input", placeholder="Confirmez votre mot de passe", id="confirm_password", style="padding-right: 3rem;") }}
+                            <button type="button" class="password-toggle" onclick="togglePassword('confirm_password', 'eye-icon-2')">
+                                <i class="fas fa-eye" id="eye-icon-2"></i>
+                            </button>
+                        </div>
+                        {% if form.confirm_password.errors %}
+                            {% for error in form.confirm_password.errors %}
+                                <div class="error-text">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>{{ error }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Conditions d'utilisation -->
+                    <div class="checkbox-section">
+                        <input type="checkbox" id="terms" required>
+                        <label for="terms">
+                            J'accepte les 
+                            <a href="#">conditions d'utilisation</a> 
+                            et la 
+                            <a href="#">politique de confidentialité</a>
+                        </label>
+                    </div>
+
+                    <!-- Bouton d'inscription -->
+                    <button type="submit" class="btn-primary" style="width: 100%;">
+                        <i class="fas fa-user-plus" style="margin-right: 0.5rem;"></i>
+                        Créer mon compte
+                    </button>
+                </form>
+
+                <!-- Lien de connexion -->
+                <div class="link-section">
+                    <p>
+                        Vous avez déjà un compte ? 
+                        <a href="{{ url_for('routes.login') }}">Connectez-vous ici</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Lien retour à l'accueil -->
+            <div class="back-link animate-fade-in">
+                <a href="{{ url_for('routes.landing') }}">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Retour à l'accueil</span>
+                </a>
+            </div>
+
+            <!-- Avantages de l'inscription -->
+            <div class="benefits-section animate-fade-in">
+                <div class="benefits-title">
+                    <i class="fas fa-star" style="margin-right: 0.5rem;"></i>
+                    Pourquoi rejoindre MediScan ?
+                </div>
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <i class="fas fa-check" style="color: #10b981;"></i>
+                        <span>Analyses illimitées</span>
+                    </div>
+                    <div class="benefit-item">
+                        <i class="fas fa-check" style="color: #10b981;"></i>
+                        <span>Historique complet</span>
+                    </div>
+                    <div class="benefit-item">
+                        <i class="fas fa-check" style="color: #10b981;"></i>
+                        <span>Interface moderne</span>
+                    </div>
+                    <div class="benefit-item">
+                        <i class="fas fa-check" style="color: #10b981;"></i>
+                        <span>Support 24/7</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(fieldId, iconId) {
+            const passwordField = document.getElementById(fieldId);
+            const eyeIcon = document.getElementById(iconId);
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Validation en temps réel
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmPassword = document.getElementById('confirm_password');
+            if (confirmPassword) {
+                confirmPassword.addEventListener('input', function() {
+                    const password = document.getElementById('password').value;
+                    const confirmPasswordValue = this.value;
+                    
+                    if (confirmPasswordValue && password !== confirmPasswordValue) {
+                        this.style.borderColor = '#ef4444';
+                    } else {
+                        this.style.borderColor = '#e5e7eb';
+                    }
+                });
+            }
+
+            // Auto-hide alerts after 5 seconds
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    alert.style.opacity = '0';
+                    alert.style.transition = 'opacity 0.3s';
+                    setTimeout(() => alert.remove(), 300);
+                });
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

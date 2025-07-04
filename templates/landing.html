@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan - Plateforme d'Analyse Médicale Intelligente</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-microscope text-white text-2xl mr-3"></i>
+                        <span class="text-white text-xl font-bold">MediScan</span>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#features" class="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition duration-300">Fonctionnalités</a>
+                        <a href="#about" class="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition duration-300">À propos</a>
+                        <a href="#contact" class="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition duration-300">Contact</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('routes.login') }}" class="btn-secondary text-sm">Connexion</a>
+                    <a href="{{ url_for('routes.register') }}" class="btn-primary text-sm">S'inscrire</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient min-h-screen flex items-center justify-center relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25px 25px, white 2px, transparent 2px); background-size: 50px 50px;"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <div class="animate-fade-in">
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-6">
+                    Analyse Médicale
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
+                        Intelligente
+                    </span>
+                </h1>
+                <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+                    Détection automatique et précise des anomalies cellulaires grâce à l'intelligence artificielle de pointe. 
+                    Révolutionnez vos diagnostics médicaux avec MediScan.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="{{ url_for('routes.register') }}" class="btn-primary text-lg px-8 py-4 animate-pulse-custom">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Commencer l'analyse
+                    </a>
+                    <a href="#features" class="btn-secondary text-lg px-8 py-4">
+                        <i class="fas fa-play mr-2"></i>
+                        Découvrir les fonctionnalités
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Hero Image/Illustration -->
+            <div class="mt-16 animate-fade-in">
+                <div class="relative mx-auto max-w-4xl">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="text-center">
+                                <div class="feature-icon mx-auto mb-4">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <h3 class="text-white font-semibold">Téléchargez</h3>
+                                <p class="text-blue-100 text-sm">Votre image médicale</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="feature-icon mx-auto mb-4">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <h3 class="text-white font-semibold">Analysez</h3>
+                                <p class="text-blue-100 text-sm">Avec notre IA avancée</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="feature-icon mx-auto mb-4">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <h3 class="text-white font-semibold">Obtenez</h3>
+                                <p class="text-blue-100 text-sm">Résultats instantanés</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 animate-fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Fonctionnalités Avancées</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Notre plateforme combine expertise médicale et intelligence artificielle pour des analyses précises et rapides.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="card animate-slide-in">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-microscope"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Détection Automatique</h3>
+                    <p class="text-gray-600">
+                        Identification automatique des drépanocytes, elliptocytes, schizocytes et cellules saines 
+                        grâce à notre modèle d'IA spécialement entraîné.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="card animate-slide-in" style="animation-delay: 0.1s">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Résultats Instantanés</h3>
+                    <p class="text-gray-600">
+                        Obtenez vos résultats d'analyse en quelques secondes avec des recommandations 
+                        médicales personnalisées pour chaque type d'anomalie détectée.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="card animate-slide-in" style="animation-delay: 0.2s">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Sécurité Maximale</h3>
+                    <p class="text-gray-600">
+                        Vos données médicales sont protégées par des protocoles de sécurité avancés 
+                        et restent strictement confidentielles.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="card animate-slide-in" style="animation-delay: 0.3s">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Suivi Historique</h3>
+                    <p class="text-gray-600">
+                        Conservez et consultez l'historique complet de vos analyses pour 
+                        un suivi médical optimal et personnalisé.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="card animate-slide-in" style="animation-delay: 0.4s">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Gestion Patients</h3>
+                    <p class="text-gray-600">
+                        Interface intuitive pour gérer les informations patients et 
+                        associer les analyses aux dossiers médicaux appropriés.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="card animate-slide-in" style="animation-delay: 0.5s">
+                    <div class="feature-icon mb-6">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Responsive Design</h3>
+                    <p class="text-gray-600">
+                        Accédez à la plateforme depuis n'importe quel appareil : 
+                        ordinateur, tablette ou smartphone pour plus de flexibilité.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
+                <div class="animate-slide-in">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-6">À propos de MediScan</h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        MediScan révolutionne le diagnostic médical en combinant l'expertise des professionnels de santé 
+                        avec la puissance de l'intelligence artificielle. Notre plateforme utilise des algorithmes de 
+                        deep learning de pointe pour détecter automatiquement les anomalies cellulaires.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="feature-icon mr-4" style="width: 2rem; height: 2rem; font-size: 1rem;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <span class="text-gray-700">Précision diagnostique supérieure à 95%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="feature-icon mr-4" style="width: 2rem; height: 2rem; font-size: 1rem;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <span class="text-gray-700">Interface intuitive et facile d'utilisation</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="feature-icon mr-4" style="width: 2rem; height: 2rem; font-size: 1rem;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <span class="text-gray-700">Conformité aux normes médicales internationales</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 lg:mt-0 animate-fade-in">
+                    <div class="bg-white rounded-2xl p-8 shadow-2xl">
+                        <div class="text-center">
+                            <div class="feature-icon mx-auto mb-6" style="width: 4rem; height: 4rem; font-size: 2rem;">
+                                <i class="fas fa-dna"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">Intelligence Artificielle Médicale</h3>
+                            <p class="text-gray-600">
+                                Notre modèle d'IA spécialement entraîné sur des milliers d'images médicales 
+                                garantit une détection précise et fiable des anomalies cellulaires.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+                <div class="animate-fade-in">
+                    <div class="text-4xl font-bold text-blue-600 mb-2">95%</div>
+                    <div class="text-gray-600">Précision diagnostique</div>
+                </div>
+                <div class="animate-fade-in" style="animation-delay: 0.1s">
+                    <div class="text-4xl font-bold text-green-600 mb-2">10k+</div>
+                    <div class="text-gray-600">Analyses effectuées</div>
+                </div>
+                <div class="animate-fade-in" style="animation-delay: 0.2s">
+                    <div class="text-4xl font-bold text-purple-600 mb-2">500+</div>
+                    <div class="text-gray-600">Professionnels utilisateurs</div>
+                </div>
+                <div class="animate-fade-in" style="animation-delay: 0.3s">
+                    <div class="text-4xl font-bold text-orange-600 mb-2">24/7</div>
+                    <div class="text-gray-600">Disponibilité</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 hero-gradient">
+        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+            <div class="animate-fade-in">
+                <h2 class="text-4xl font-bold text-white mb-6">
+                    Prêt à révolutionner vos diagnostics ?
+                </h2>
+                <p class="text-xl text-blue-100 mb-8">
+                    Rejoignez des centaines de professionnels de santé qui font confiance à MediScan 
+                    pour des analyses médicales précises et rapides.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{{ url_for('routes.register') }}" class="btn-primary text-lg px-8 py-4">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Créer un compte gratuit
+                    </a>
+                    <a href="{{ url_for('routes.login') }}" class="btn-secondary text-lg px-8 py-4">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Se connecter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-microscope text-blue-400 text-2xl mr-3"></i>
+                        <span class="text-white text-xl font-bold">MediScan</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Plateforme d'analyse médicale intelligente utilisant l'intelligence artificielle 
+                        pour la détection automatique d'anomalies cellulaires.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-blue-400 transition duration-300">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-blue-400 transition duration-300">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-blue-400 transition duration-300">
+                            <i class="fab fa-github text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Liens rapides</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition duration-300">Fonctionnalités</a></li>
+                        <li><a href="#about" class="text-gray-400 hover:text-white transition duration-300">À propos</a></li>
+                        <li><a href="{{ url_for('routes.login') }}" class="text-gray-400 hover:text-white transition duration-300">Connexion</a></li>
+                        <li><a href="{{ url_for('routes.register') }}" class="text-gray-400 hover:text-white transition duration-300">S'inscrire</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><i class="fas fa-envelope mr-2"></i>contact@mediscan.com</li>
+                        <li><i class="fas fa-phone mr-2"></i>+33 1 23 45 67 89</li>
+                        <li><i class="fas fa-map-marker-alt mr-2"></i>Paris, France</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center">
+                <p class="text-gray-400">
+                    © 2025 MediScan. Tous droits réservés. 
+                    <span class="mx-2">|</span>
+                    <a href="#" class="hover:text-white transition duration-300">Politique de confidentialité</a>
+                    <span class="mx-2">|</span>
+                    <a href="#" class="hover:text-white transition duration-300">Conditions d'utilisation</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Smooth Scrolling Script -->
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-fade-in');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-slide-in, .card').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
