@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% set dashboard_content = true %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- En-tête de bienvenue -->
+    <div class="bg-white border-b border-gray-200 py-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-tachometer-alt text-blue-600 mr-3"></i>
+                    Tableau de Bord
+                </h1>
+                <p class="text-gray-600 mt-2">
+                    Bienvenue {{ current_user.username }} - 
+                    {% if current_user.is_admin() %}
+                        <span class="text-purple-600 font-semibold">Administrateur</span>
+                    {% elif current_user.is_medecin() %}
+                        <span class="text-blue-600 font-semibold">Médecin</span>
+                    {% else %}
+                        <span class="text-green-600 font-semibold">Patient</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+                    <div class="text-sm text-green-600 font-semibold">Statut Système</div>
+                    <div class="text-xs text-green-500 flex items-center">
+                        <i class="fas fa-circle text-green-500 mr-1"></i>
+                        Opérationnel
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Statistiques rapides -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {% if current_user.is_medecin() or current_user.is_admin() %}
+            <!-- Analyses du jour -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-microscope text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Analyses Aujourd'hui</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.analyses_today if stats else '0' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patients -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Patients</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.total_patients if stats else '0' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anomalies détectées -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-600">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Anomalies Détectées</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.anomalies_today if stats else '0' }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notifications -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-bell text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Notifications</p>
+                        {% set unread_count = current_user.unread_notifications_count %}
+                        <p class="text-2xl font-bold text-gray-900">{{ unread_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions principales -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+            {% if current_user.is_medecin() or current_user.is_admin() %}
+            <!-- Nouvelle analyse -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-microscope text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Nouvelle Analyse</h3>
+                    <p class="text-gray-600 mb-4">Analyser une nouvelle image médicale avec l'IA</p>
+                    <a href="{{ url_for('routes.analyse') }}" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        Commencer l'analyse
+                    </a>
+                </div>
+            </div>
+
+            <!-- Gestion des patients -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-users text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Patients</h3>
+                    <p class="text-gray-600 mb-4">Gérer les dossiers patients et leur historique</p>
+                    <a href="{{ url_for('routes.patients_list') }}" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-list mr-2"></i>
+                        Voir les patients
+                    </a>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-bar text-purple-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Statistiques</h3>
+                    <p class="text-gray-600 mb-4">Consulter les métriques et analyses</p>
+                    <a href="{{ url_for('routes.statistics_dashboard') }}" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        Voir les stats
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Historique des analyses -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-history text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        {% if current_user.is_patient() %}Mes Analyses{% else %}Historique{% endif %}
+                    </h3>
+                    <p class="text-gray-600 mb-4">Consulter l'historique des analyses</p>
+                    <a href="{{ url_for('routes.analyses_list') }}" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-clock mr-2"></i>
+                        Voir l'historique
+                    </a>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-bell text-yellow-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Notifications</h3>
+                    <p class="text-gray-600 mb-4">Consulter vos notifications</p>
+                    <a href="{{ url_for('routes.view_notifications') }}" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-envelope mr-2"></i>
+                        Voir notifications
+                        {% if unread_count > 0 %}
+                            <span class="ml-2 bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">{{ unread_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+
+            {% if current_user.is_medecin() or current_user.is_admin() %}
+            <!-- Recherche et annotation -->
+            <div class="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-search text-orange-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Recherche</h3>
+                    <p class="text-gray-600 mb-4">Interface de recherche et annotation</p>
+                    <a href="{{ url_for('routes.research_data') }}" class="btn-primary inline-flex items-center">
+                        <i class="fas fa-database mr-2"></i>
+                        Accéder aux données
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Section Administration (Admin seulement) -->
+        {% if current_user.is_admin() %}
+        <div class="bg-white rounded-lg shadow border border-gray-200 mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-cogs text-purple-600 mr-3"></i>
+                    Administration
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Gestion des utilisateurs -->
+                    <a href="{{ url_for('routes.admin_users') }}" class="p-4 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-users-cog text-purple-600 text-xl mr-3"></i>
+                            <div>
+                                <div class="font-semibold text-gray-900">Utilisateurs</div>
+                                <div class="text-sm text-gray-600">Gestion des comptes</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Journal d'audit -->
+                    <a href="{{ url_for('routes.admin_audit') }}" class="p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-clipboard-list text-blue-600 text-xl mr-3"></i>
+                            <div>
+                                <div class="font-semibold text-gray-900">Audit</div>
+                                <div class="text-sm text-gray-600">Journal des actions</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Monitoring -->
+                    <a href="/monitoring/health" target="_blank" class="p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-heartbeat text-green-600 text-xl mr-3"></i>
+                            <div>
+                                <div class="font-semibold text-gray-900">Monitoring</div>
+                                <div class="text-sm text-gray-600">Santé du système</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Export des données -->
+                    <a href="{{ url_for('routes.export_research_data') }}?format=csv" class="p-4 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-download text-orange-600 text-xl mr-3"></i>
+                            <div>
+                                <div class="font-semibold text-gray-900">Export</div>
+                                <div class="text-sm text-gray-600">Données de recherche</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Fonctionnalités récentes ou notifications importantes -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-star text-yellow-500 mr-3"></i>
+                Nouvelles Fonctionnalités
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-gray-900 mb-2">🎯 IA Améliorée</h3>
+                    <p class="text-sm text-gray-600">Détection plus précise des anomalies cellulaires avec le modèle YOLOv8</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-gray-900 mb-2">📊 Rapports PDF</h3>
+                    <p class="text-sm text-gray-600">Génération automatique de rapports médicaux professionnels</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-gray-900 mb-2">🔒 Sécurité Renforcée</h3>
+                    <p class="text-sm text-gray-600">Authentification 2FA et audit trail complet</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-gray-900 mb-2">👥 Gestion Multi-rôles</h3>
+                    <p class="text-sm text-gray-600">Interface adaptée pour médecins, patients et administrateurs</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-gray-900 mb-2">📈 Statistiques Avancées</h3>
+                    <p class="text-sm text-gray-600">Tableaux de bord avec métriques détaillées</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-gray-900 mb-2">🔍 Interface de Recherche</h3>
+                    <p class="text-sm text-gray-600">Outils d'annotation pour la recherche médicale</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -29,7 +29,9 @@
         <div class="p-6">
             <!-- Section d'upload -->
             <div class="max-w-4xl mx-auto">
-                <form method="post" enctype="multipart/form-data" action="{{ url_for('routes.analyse') }}" id="upload-form">
+                <form method="post" enctype="multipart/form-data" 
+                      action="{{ url_for('routes.analyse', patient_id=patient_info.id) if patient_info else url_for('routes.analyse') }}" 
+                      id="upload-form">
                     
                     <!-- Étape 1: Upload -->
                     <div id="upload-section" class="card mb-8 animate-slide-in">
@@ -256,25 +258,49 @@
                         <div class="card">
                             <div class="card-header">
                                 <i class="fas fa-user-plus mr-2"></i>
+                                {% if patient_info %}
+                                Étape 4: Analyse pour {{ patient_info.prenom }} {{ patient_info.nom }}
+                                {% else %}
                                 Étape 4: Informations du patient
+                                {% endif %}
                             </div>
+                            
+                            {% if patient_info %}
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <div class="flex items-center">
+                                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                                    <div class="text-sm text-blue-800">
+                                        <strong>Patient sélectionné :</strong> Cette analyse sera automatiquement associée au patient {{ patient_info.prenom }} {{ patient_info.nom }}.
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label for="patient_nom" class="form-label">Nom du patient *</label>
-                                    <input type="text" id="patient_nom" name="patient_nom" class="form-input" placeholder="Nom de famille" required>
+                                    <input type="text" id="patient_nom" name="patient_nom" class="form-input" placeholder="Nom de famille" 
+                                           value="{{ patient_info.nom if patient_info else '' }}" 
+                                           {% if patient_info %}readonly{% endif %} required>
                                 </div>
                                 <div>
                                     <label for="patient_prenom" class="form-label">Prénom</label>
-                                    <input type="text" id="patient_prenom" name="patient_prenom" class="form-input" placeholder="Prénom(s)">
+                                    <input type="text" id="patient_prenom" name="patient_prenom" class="form-input" placeholder="Prénom(s)"
+                                           value="{{ patient_info.prenom if patient_info else '' }}"
+                                           {% if patient_info %}readonly{% endif %}>
                                 </div>
                                 <div class="md:col-span-2">
                                     <label for="patient_date_naissance" class="form-label">Date de naissance</label>
-                                    <input type="date" id="patient_date_naissance" name="patient_date_naissance" class="form-input">
+                                    <input type="date" id="patient_date_naissance" name="patient_date_naissance" class="form-input"
+                                           value="{{ patient_info.date_naissance if patient_info else '' }}"
+                                           {% if patient_info %}readonly{% endif %}>
                                 </div>
                             </div>
 
                             <!-- Champs cachés -->
+                            {% if patient_info %}
+                            <input type="hidden" name="existing_patient_id" value="{{ patient_info.id }}">
+                            {% endif %}
                             <input type="hidden" name="output_image_filename" value="{{ image_filename }}">
                             <input type="hidden" name="status" value="{{ resultat_analyse.status }}">
                             <input type="hidden" name="diseases" value="{{ resultat_analyse.diseases | join(',') }}">

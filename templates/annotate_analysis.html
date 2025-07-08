@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-6xl">
+    <!-- Header avec navigation -->
+    <div class="mb-6">
+        <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-4">
+            <a href="{{ url_for('routes.research_data') }}" class="hover:text-blue-600">Données de Recherche</a>
+            <i class="fas fa-chevron-right"></i>
+            <span class="text-gray-900">Annotation Analyse #{{ analyse.id }}</span>
+        </nav>
+        
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-tags text-purple-600 mr-2"></i>
+            Annotation de l'Analyse
+        </h1>
+        <p class="text-gray-600 mt-2">Annotez et validez les résultats de l'analyse pour améliorer le modèle d'IA.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Informations de l'analyse -->
+        <div class="space-y-6">
+            <!-- Détails de l'analyse -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Informations de l'Analyse</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <label class="block text-gray-500 font-medium">ID Analyse:</label>
+                            <p class="text-gray-900">#{{ analyse.id }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 font-medium">Date:</label>
+                            <p class="text-gray-900">{{ analyse.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 font-medium">Patient:</label>
+                            <p class="text-gray-900">{{ analyse.patient.nom }} {{ analyse.patient.prenom }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-gray-500 font-medium">Médecin:</label>
+                            <p class="text-gray-900">Dr. {{ analyse.medecin.nom }} {{ analyse.medecin.prenom }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Résultats de l'IA -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Résultats de l'IA</h2>
+                </div>
+                <div class="p-6">
+                    {% if analyse.anomalies_detectees %}
+                        <div class="mb-4">
+                            <label class="block text-gray-500 font-medium mb-2">Anomalies détectées:</label>
+                            <div class="flex flex-wrap gap-2">
+                                {% for anomalie in analyse.anomalies_detectees.split(',') %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    {{ anomalie.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        {% if analyse.confiance_score %}
+                        <div class="mb-4">
+                            <label class="block text-gray-500 font-medium mb-2">Score de confiance:</label>
+                            <div class="flex items-center">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ analyse.confiance_score * 100 }}%"></div>
+                                </div>
+                                <span class="ml-3 text-sm font-medium text-gray-900">{{ "%.1f"|format(analyse.confiance_score * 100) }}%</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                Aucune anomalie détectée
+                            </span>
+                        </div>
+                    {% endif %}
+
+                    {% if analyse.resultat_global %}
+                    <div class="mt-4">
+                        <label class="block text-gray-500 font-medium mb-2">Résultat global:</label>
+                        <p class="text-gray-900 bg-gray-50 p-3 rounded">{{ analyse.resultat_global }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Images de l'analyse -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Images</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 gap-4">
+                        {% if analyse.image_originale %}
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-700 mb-2">Image originale</h3>
+                            <img src="{{ url_for('static', filename='uploaded_images/' + analyse.image_originale) }}" 
+                                 alt="Image originale" 
+                                 class="w-full h-64 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity"
+                                 onclick="showImageModal(this.src)">
+                        </div>
+                        {% endif %}
+                        
+                        {% if analyse.image_resultat %}
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-700 mb-2">Résultat de l'analyse</h3>
+                            <img src="{{ url_for('static', filename='results_images/' + analyse.image_resultat) }}" 
+                                 alt="Résultat analyse" 
+                                 class="w-full h-64 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity"
+                                 onclick="showImageModal(this.src)">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire d'annotation -->
+        <div class="space-y-6">
+            <!-- Annotation existante -->
+            {% set existing_annotation = analyse.annotations|selectattr('type', 'equalto', 'research')|first %}
+            {% if existing_annotation %}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">Annotation existante</h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <p class="mb-2">{{ existing_annotation.annotation }}</p>
+                            <p class="text-xs">
+                                Par {{ existing_annotation.annotateur.nom }} {{ existing_annotation.annotateur.prenom }}
+                                le {{ existing_annotation.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                            </p>
+                            {% if existing_annotation.tags %}
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                {% for tag in existing_annotation.tags.split(',') %}
+                                <span class="inline-block px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded">
+                                    {{ tag.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Formulaire d'annotation -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        {% if existing_annotation %}Modifier l'Annotation{% else %}Nouvelle Annotation{% endif %}
+                    </h2>
+                </div>
+                <form method="POST" class="p-6 space-y-6">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Type d'annotation -->
+                    <div>
+                        {{ form.annotation_type.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.annotation_type(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500") }}
+                        {% if form.annotation_type.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.annotation_type.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Évaluation de l'IA -->
+                    <div>
+                        {{ form.ia_evaluation.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.ia_evaluation(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500") }}
+                        {% if form.ia_evaluation.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.ia_evaluation.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Évaluez la précision des résultats de l'IA</p>
+                    </div>
+
+                    <!-- Annotation textuelle -->
+                    <div>
+                        {{ form.annotation.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.annotation(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500", rows="4", placeholder="Décrivez vos observations, corrections ou commentaires sur cette analyse...") }}
+                        {% if form.annotation.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.annotation.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tags -->
+                    <div>
+                        {{ form.tags.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.tags(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500", placeholder="Entrez les tags séparés par des virgules (ex: faux-positif, qualité-image, formation)") }}
+                        {% if form.tags.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.tags.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Tags suggérés: faux-positif, faux-négatif, qualité-image, formation, recherche</p>
+                    </div>
+
+                    <!-- Statut -->
+                    <div>
+                        {{ form.statut.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.statut(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500") }}
+                        {% if form.statut.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.statut.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes privées -->
+                    <div>
+                        {{ form.notes_privees.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.notes_privees(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500", rows="3", placeholder="Notes privées non visibles dans les exports...") }}
+                        {% if form.notes_privees.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.notes_privees.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-gray-200">
+                        <a href="{{ url_for('routes.research_data') }}" 
+                           class="inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Retour à la liste
+                        </a>
+                        <button type="button" onclick="saveAsDraft()" 
+                                class="inline-flex items-center justify-center px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>
+                            Sauvegarder en brouillon
+                        </button>
+                        <button type="submit" 
+                                class="inline-flex items-center justify-center px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-tags mr-2"></i>
+                            {% if existing_annotation %}Mettre à jour l'annotation{% else %}Enregistrer l'annotation{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Historique des annotations -->
+            {% if analyse.annotations|length > 1 %}
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Historique des Annotations</h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        {% for annotation in analyse.annotations|reverse %}
+                        {% if annotation.id != existing_annotation.id if existing_annotation %}
+                        <div class="border-l-4 border-gray-300 pl-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-medium text-gray-900">{{ annotation.type|title }}</h4>
+                                <span class="text-xs text-gray-500">{{ annotation.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-2">{{ annotation.annotation }}</p>
+                            <p class="text-xs text-gray-500">
+                                Par {{ annotation.annotateur.nom }} {{ annotation.annotateur.prenom }}
+                            </p>
+                            {% if annotation.tags %}
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                {% for tag in annotation.tags.split(',') %}
+                                <span class="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                    {{ tag.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour visualiser les images -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+    <div class="relative max-w-4xl max-h-full p-4">
+        <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white hover:text-gray-300">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <img id="modalImage" src="" alt="Image agrandie" class="max-w-full max-h-full rounded">
+    </div>
+</div>
+
+<!-- Toast pour les notifications -->
+<div id="toast" class="fixed top-4 right-4 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div class="flex items-center">
+            <i class="fas fa-check mr-2"></i>
+            <span id="toastMessage">Annotation enregistrée avec succès</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// Afficher le modal d'image
+function showImageModal(imageSrc) {
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('imageModal').classList.remove('hidden');
+}
+
+function closeImageModal() {
+    document.getElementById('imageModal').classList.add('hidden');
+}
+
+// Sauvegarder en brouillon
+function saveAsDraft() {
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    formData.set('statut', 'draft');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Brouillon sauvegardé', 'info');
+        } else {
+            showToast('Erreur lors de la sauvegarde', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la sauvegarde', 'error');
+    });
+}
+
+// Afficher un toast
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    
+    let bgColor = 'bg-green-500';
+    if (type === 'error') bgColor = 'bg-red-500';
+    else if (type === 'info') bgColor = 'bg-blue-500';
+    else if (type === 'warning') bgColor = 'bg-yellow-500';
+    
+    toast.firstElementChild.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg`;
+    
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+// Fermer le modal en cliquant à l'extérieur
+document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeImageModal();
+    }
+});
+
+// Auto-sauvegarde du brouillon toutes les 2 minutes
+setInterval(() => {
+    const annotation = document.querySelector('textarea[name="annotation"]').value;
+    if (annotation.trim().length > 10) {
+        saveAsDraft();
+    }
+}, 120000);
+
+// Suggestions de tags intelligentes
+const tagsInput = document.querySelector('input[name="tags"]');
+const commonTags = ['faux-positif', 'faux-négatif', 'qualité-image', 'formation', 'recherche', 'validation', 'anomalie-rare', 'image-floue'];
+
+tagsInput.addEventListener('input', function() {
+    // Logique de suggestion de tags basée sur le contenu
+    const value = this.value.toLowerCase();
+    
+    // Suggestions automatiques basées sur le contenu de l'annotation
+    const annotationText = document.querySelector('textarea[name="annotation"]').value.toLowerCase();
+    
+    if (annotationText.includes('faux') && !value.includes('faux')) {
+        // Suggérer les tags de faux positifs/négatifs
+    }
+    
+    if (annotationText.includes('flou') || annotationText.includes('qualité')) {
+        // Suggérer le tag qualité-image
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-4xl">
+    <!-- Header avec navigation -->
+    <div class="mb-6">
+        <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-4">
+            <a href="{{ url_for('routes.patients_list') }}" class="hover:text-blue-600">Patients</a>
+            <i class="fas fa-chevron-right"></i>
+            {% if patient %}
+                <a href="{{ url_for('routes.patient_detail', patient_id=patient.id) }}" class="hover:text-blue-600">{{ patient.nom }} {{ patient.prenom }}</a>
+                <i class="fas fa-chevron-right"></i>
+                <span class="text-gray-900">Modifier</span>
+            {% else %}
+                <span class="text-gray-900">Nouveau Patient</span>
+            {% endif %}
+        </nav>
+        
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-user-plus text-blue-600 mr-2"></i>
+            {% if patient %}Modifier le Patient{% else %}Nouveau Patient{% endif %}
+        </h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Informations du Patient</h2>
+            <p class="text-sm text-gray-500 mt-1">Remplissez les informations ci-dessous pour {% if patient %}modifier{% else %}créer{% endif %} le dossier patient.</p>
+        </div>
+
+        <form method="POST" class="p-6">
+            {{ form.hidden_tag() }}
+            
+            <!-- Informations personnelles -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-user text-blue-600 mr-2"></i>
+                    Informations Personnelles
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nom -->
+                    <div>
+                        {{ form.nom.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.nom(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.nom.errors else "")) }}
+                        {% if form.nom.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.nom.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Prénom -->
+                    <div>
+                        {{ form.prenom.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.prenom(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.prenom.errors else "")) }}
+                        {% if form.prenom.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.prenom.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Date de naissance -->
+                    <div>
+                        {{ form.date_naissance.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.date_naissance(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.date_naissance.errors else "")) }}
+                        {% if form.date_naissance.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.date_naissance.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Format: JJ/MM/AAAA</p>
+                    </div>
+
+                    <!-- Sexe -->
+                    <div>
+                        {{ form.sexe.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.sexe(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.sexe.errors else "")) }}
+                        {% if form.sexe.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.sexe.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Numéro de sécurité sociale -->
+                    <div class="md:col-span-2">
+                        {{ form.numero_securite_sociale.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.numero_securite_sociale(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.numero_securite_sociale.errors else ""), placeholder="1234567890123") }}
+                        {% if form.numero_securite_sociale.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.numero_securite_sociale.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">13 chiffres sans espaces</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations de contact -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-address-book text-blue-600 mr-2"></i>
+                    Informations de Contact
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Email -->
+                    <div>
+                        {{ form.email.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.email(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.email.errors else ""), placeholder="patient@exemple.com") }}
+                        {% if form.email.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.email.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Téléphone -->
+                    <div>
+                        {{ form.telephone.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.telephone(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.telephone.errors else ""), placeholder="01 23 45 67 89") }}
+                        {% if form.telephone.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.telephone.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Adresse -->
+                    <div class="md:col-span-2">
+                        {{ form.adresse.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.adresse(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.adresse.errors else ""), rows="3", placeholder="Adresse complète du patient") }}
+                        {% if form.adresse.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.adresse.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations médicales -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-user-md text-blue-600 mr-2"></i>
+                    Informations Médicales
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Médecin traitant -->
+                    <div>
+                        {{ form.medecin_traitant.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.medecin_traitant(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.medecin_traitant.errors else ""), placeholder="Dr. Nom Prénom") }}
+                        {% if form.medecin_traitant.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.medecin_traitant.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Groupe sanguin -->
+                    {% if form.groupe_sanguin %}
+                    <div>
+                        {{ form.groupe_sanguin.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.groupe_sanguin(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.groupe_sanguin.errors else "")) }}
+                        {% if form.groupe_sanguin.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.groupe_sanguin.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Allergies -->
+                    {% if form.allergies %}
+                    <div class="md:col-span-2">
+                        {{ form.allergies.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.allergies(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.allergies.errors else ""), rows="3", placeholder="Allergies connues du patient") }}
+                        {% if form.allergies.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.allergies.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Antécédents médicaux -->
+                    {% if form.antecedents_medicaux %}
+                    <div class="md:col-span-2">
+                        {{ form.antecedents_medicaux.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.antecedents_medicaux(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" + (" border-red-300 bg-red-50" if form.antecedents_medicaux.errors else ""), rows="4", placeholder="Antécédents médicaux du patient") }}
+                        {% if form.antecedents_medicaux.errors %}
+                            <div class="mt-1 text-sm text-red-600">
+                                {% for error in form.antecedents_medicaux.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-gray-200">
+                <a href="{% if patient %}{{ url_for('routes.patient_detail', patient_id=patient.id) }}{% else %}{{ url_for('routes.patients_list') }}{% endif %}" 
+                   class="inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="inline-flex items-center justify-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if patient %}Mettre à jour{% else %}Créer le Patient{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Validation côté client
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du numéro de sécurité sociale
+    const ssnInput = document.querySelector('input[name="numero_securite_sociale"]');
+    if (ssnInput) {
+        ssnInput.addEventListener('input', function(e) {
+            // Supprimer tout caractère non numérique
+            e.target.value = e.target.value.replace(/\D/g, '');
+            // Limiter à 13 caractères
+            if (e.target.value.length > 13) {
+                e.target.value = e.target.value.slice(0, 13);
+            }
+        });
+    }
+
+    // Validation du téléphone
+    const phoneInput = document.querySelector('input[name="telephone"]');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // Format automatique du numéro de téléphone
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) value = value.slice(0, 2) + ' ' + value.slice(2);
+            if (value.length >= 5) value = value.slice(0, 5) + ' ' + value.slice(5);
+            if (value.length >= 8) value = value.slice(0, 8) + ' ' + value.slice(8);
+            if (value.length >= 11) value = value.slice(0, 11) + ' ' + value.slice(11);
+            if (value.length > 14) value = value.slice(0, 14);
+            e.target.value = value;
+        });
+    }
+});
+</script>
+{% endblock %}

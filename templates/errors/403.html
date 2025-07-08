@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Accès interdit - Analyse Médicale{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-template">
+                <h1 class="display-1 text-warning">403</h1>
+                <h2>Accès interdit</h2>
+                <div class="error-details">
+                    <p class="lead">Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
+                    <p>Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.</p>
+                </div>
+                <div class="error-actions mt-4">
+                    <a href="{{ url_for('routes.index') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-home"></i> Retour à l'accueil
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('routes.login') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-sign-in-alt"></i> Se connecter
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-template {
+    padding: 40px 15px;
+}
+.error-template h1 {
+    font-size: 6rem;
+    font-weight: bold;
+}
+.error-template h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+.error-details {
+    margin-bottom: 30px;
+}
+.error-actions .btn {
+    margin: 5px;
+}
+</style>
+{% endblock %}

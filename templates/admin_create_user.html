@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un Utilisateur - Administration{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Créer un Utilisateur</h1>
+            <p class="text-gray-600 mt-2">Ajouter un nouvel utilisateur au système</p>
+        </div>
+        <a href="{{ url_for('routes.admin_users') }}" 
+           class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="POST" class="space-y-6">
+            {{ form.hidden_tag() }}
+            
+            <!-- Informations personnelles -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nom *
+                    </label>
+                    {{ form.nom(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.nom.errors %}
+                        <ul class="text-red-500 text-sm mt-1">
+                            {% for error in form.nom.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="prenom" class="block text-sm font-medium text-gray-700 mb-2">
+                        Prénom *
+                    </label>
+                    {{ form.prenom(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.prenom.errors %}
+                        <ul class="text-red-500 text-sm mt-1">
+                            {% for error in form.prenom.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Email et rôle -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                        Email *
+                    </label>
+                    {{ form.email(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.email.errors %}
+                        <ul class="text-red-500 text-sm mt-1">
+                            {% for error in form.email.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
+                        Rôle *
+                    </label>
+                    {{ form.role(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.role.errors %}
+                        <ul class="text-red-500 text-sm mt-1">
+                            {% for error in form.role.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Mots de passe -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        Mot de passe *
+                    </label>
+                    {{ form.password(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.password.errors %}
+                        <ul class="text-red-500 text-sm mt-1">
+                            {% for error in form.password.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="password_confirm" class="block text-sm font-medium text-gray-700 mb-2">
+                        Confirmer le mot de passe *
+                    </label>
+                    {{ form.password_confirm(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    {% if form.password_confirm.errors %}
+                        <ul class="text-red-500 text-sm mt-1">
+                            {% for error in form.password_confirm.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informations supplémentaires pour les patients -->
+            <div id="patient-fields" class="hidden space-y-6">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                    Informations Patient
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% if form.date_naissance %}
+                    <div>
+                        <label for="date_naissance" class="block text-sm font-medium text-gray-700 mb-2">
+                            Date de naissance
+                        </label>
+                        {{ form.date_naissance(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.telephone %}
+                    <div>
+                        <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
+                            Téléphone
+                        </label>
+                        {{ form.telephone(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent") }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if form.adresse %}
+                <div>
+                    <label for="adresse" class="block text-sm font-medium text-gray-700 mb-2">
+                        Adresse
+                    </label>
+                    {{ form.adresse(class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent rows=3") }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('routes.admin_users') }}" 
+                   class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Créer l'utilisateur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleField = document.getElementById('{{ form.role.id }}');
+    const patientFields = document.getElementById('patient-fields');
+    
+    function togglePatientFields() {
+        if (roleField.value === 'patient') {
+            patientFields.classList.remove('hidden');
+        } else {
+            patientFields.classList.add('hidden');
+        }
+    }
+    
+    roleField.addEventListener('change', togglePatientFields);
+    togglePatientFields(); // Initial check
+});
+</script>
+{% endblock %}
