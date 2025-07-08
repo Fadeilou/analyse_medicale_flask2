@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
+                <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+                Tableau de Bord Statistiques
+            </h1>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <select id="periodFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="7">7 derniers jours</option>
+                    <option value="30" selected>30 derniers jours</option>
+                    <option value="90">3 derniers mois</option>
+                    <option value="365">Année en cours</option>
+                </select>
+                <button onclick="exportStats()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-download mr-2"></i>
+                    Exporter CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métriques principales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total patients -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Patients</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_patients or 0 }}</p>
+                    <p class="text-sm text-green-600">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +{{ stats.new_patients_period or 0 }} cette période
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total analyses -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-microscope text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Analyses</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_analyses or 0 }}</p>
+                    <p class="text-sm text-purple-600">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +{{ stats.analyses_period or 0 }} cette période
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anomalies détectées -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Anomalies Détectées</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_anomalies or 0 }}</p>
+                    <p class="text-sm text-gray-600">
+                        {{ "%.1f"|format((stats.total_anomalies / stats.total_analyses * 100) if stats.total_analyses > 0 else 0) }}% des analyses
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de précision -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-bullseye text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Taux de Précision</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(stats.precision_rate or 95.0) }}%</p>
+                    <p class="text-sm text-green-600">
+                        <i class="fas fa-check mr-1"></i>
+                        Excellente performance
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Graphique des analyses par jour -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Analyses par Jour</h3>
+                <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                    <span class="text-sm text-gray-600">Analyses</span>
+                    <span class="w-3 h-3 bg-red-500 rounded-full ml-4"></span>
+                    <span class="text-sm text-gray-600">Anomalies</span>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="analysesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Répartition des types d'anomalies -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Types d'Anomalies Détectées</h3>
+            <div class="h-64">
+                <canvas id="anomaliesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableaux détaillés -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top patients avec anomalies -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Patients avec Anomalies Récentes</h3>
+            </div>
+            <div class="p-6">
+                {% if stats.top_anomaly_patients %}
+                <div class="space-y-4">
+                    {% for patient_data in stats.top_anomaly_patients %}
+                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-red-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ patient_data.patient.nom }} {{ patient_data.patient.prenom }}
+                                </p>
+                                <p class="text-xs text-gray-500">{{ patient_data.anomaly_count }} anomalies</p>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('routes.patient_detail', patient_id=patient_data.patient.id) }}" 
+                           class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-check-circle text-green-300 text-4xl mb-2"></i>
+                    <p class="text-sm text-gray-500">Aucune anomalie récente détectée</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Médecins les plus actifs -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Médecins les Plus Actifs</h3>
+            </div>
+            <div class="p-6">
+                {% if stats.top_doctors %}
+                <div class="space-y-4">
+                    {% for doctor_data in stats.top_doctors %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-md text-blue-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">
+                                    Dr. {{ doctor_data.doctor.nom }} {{ doctor_data.doctor.prenom }}
+                                </p>
+                                <p class="text-xs text-gray-500">{{ doctor_data.analysis_count }} analyses</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="w-16 h-2 bg-gray-200 rounded">
+                                <div class="h-2 bg-blue-500 rounded" 
+                                     style="width: {{ (doctor_data.analysis_count / stats.max_doctor_analyses * 100) if stats.max_doctor_analyses > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-user-md text-gray-300 text-4xl mb-2"></i>
+                    <p class="text-sm text-gray-500">Aucune donnée disponible</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyses récentes -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Analyses Récentes</h3>
+                <a href="{{ url_for('routes.analyses_list') }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                    Voir toutes <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+        
+        {% if stats.recent_analyses %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Médecin</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Résultat</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for analyse in stats.recent_analyses %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ analyse.patient.nom }} {{ analyse.patient.prenom }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ analyse.created_at.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            Dr. {{ analyse.medecin.nom }} {{ analyse.medecin.prenom }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if analyse.anomalies_detectees %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Anomalies détectées
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Normal
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}" 
+                               class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-microscope text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune analyse récente</h3>
+            <p class="text-gray-500">Les analyses récentes apparaîtront ici.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Scripts pour les graphiques -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Données pour les graphiques (injectées depuis le backend)
+const chartData = {
+    daily_analyses: {{ stats.daily_analyses_data|tojson|safe if stats.daily_analyses_data else '[]' }},
+    anomaly_types: {{ stats.anomaly_types_data|tojson|safe if stats.anomaly_types_data else '{}' }}
+};
+
+// Graphique des analyses par jour
+const analysesCtx = document.getElementById('analysesChart').getContext('2d');
+new Chart(analysesCtx, {
+    type: 'line',
+    data: {
+        labels: chartData.daily_analyses.map(d => d.date),
+        datasets: [{
+            label: 'Analyses',
+            data: chartData.daily_analyses.map(d => d.analyses),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Anomalies',
+            data: chartData.daily_analyses.map(d => d.anomalies),
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Graphique des types d'anomalies
+const anomaliesCtx = document.getElementById('anomaliesChart').getContext('2d');
+new Chart(anomaliesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(chartData.anomaly_types),
+        datasets: [{
+            data: Object.values(chartData.anomaly_types),
+            backgroundColor: [
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(236, 72, 153, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    usePointStyle: true,
+                    padding: 20
+                }
+            }
+        }
+    }
+});
+
+// Filtre par période
+document.getElementById('periodFilter').addEventListener('change', function() {
+    const period = this.value;
+    window.location.href = `{{ url_for('routes.statistics_dashboard') }}?period=${period}`;
+});
+
+// Export CSV
+function exportStats() {
+    window.location.href = '{{ url_for("routes.export_statistics_csv") }}';
+}
+
+// Mise à jour automatique des données toutes les 5 minutes
+setInterval(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}

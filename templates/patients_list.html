@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="bg-white rounded-lg shadow-md">
+        <!-- Header avec actions -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <h1 class="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
+                    <i class="fas fa-users text-blue-600 mr-2"></i>
+                    Gestion des Patients
+                </h1>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="{{ url_for('routes.create_patient') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nouveau Patient
+                    </a>
+                    <a href="{{ url_for('routes.statistics_dashboard') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Statistiques
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres et recherche -->
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <form method="GET" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                           placeholder="Rechercher par nom, prénom ou numéro de sécurité sociale..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-search mr-1"></i>
+                        Rechercher
+                    </button>
+                    <a href="{{ url_for('routes.patients_list') }}" 
+                       class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        <i class="fas fa-times mr-1"></i>
+                        Effacer
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Statistiques rapides -->
+        <div class="px-6 py-4 bg-blue-50 border-b border-gray-200">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <div class="text-2xl font-bold text-blue-600">{{ patients.total }}</div>
+                    <div class="text-sm text-gray-600">Total Patients</div>
+                </div>
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <div class="text-2xl font-bold text-green-600">{{ stats.analyses_today or 0 }}</div>
+                    <div class="text-sm text-gray-600">Analyses Aujourd'hui</div>
+                </div>
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <div class="text-2xl font-bold text-orange-600">{{ stats.anomalies_today or 0 }}</div>
+                    <div class="text-sm text-gray-600">Anomalies Détectées</div>
+                </div>
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <div class="text-2xl font-bold text-purple-600">{{ stats.pending_reviews or 0 }}</div>
+                    <div class="text-sm text-gray-600">En Attente de Révision</div>
+                </div>
+            </div>
+        </div>
+
+        {% if patients.items %}
+        <!-- Table responsive -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dernière Analyse</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for patient in patients.items %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-user text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ patient.nom }} {{ patient.prenom }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {% if patient.date_naissance %}
+                                            {{ patient.date_naissance.strftime('%d/%m/%Y') }} 
+                                            {% if patient.age %}({{ patient.age }} ans){% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        SSN: {{ patient.numero_securite_sociale or 'Non renseigné' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if patient.email %}
+                                    <div><i class="fas fa-envelope text-gray-400 mr-1"></i>{{ patient.email }}</div>
+                                {% endif %}
+                                {% if patient.telephone %}
+                                    <div><i class="fas fa-phone text-gray-400 mr-1"></i>{{ patient.telephone }}</div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if patient.analyses %}
+                                {% set latest_analysis = patient.analyses|selectattr('created_at')|list|last %}
+                                <div class="text-sm text-gray-900">
+                                    {{ latest_analysis.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ latest_analysis.resultat_global or 'En cours' }}
+                                </div>
+                            {% else %}
+                                <span class="text-sm text-gray-400">Aucune analyse</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if patient.analyses %}
+                                {% set has_anomalies = patient.analyses|selectattr('anomalies_detectees')|list|length > 0 %}
+                                {% if has_anomalies %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Anomalies détectées
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Normal
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Nouveau
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <a href="{{ url_for('routes.patient_detail', patient_id=patient.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('routes.edit_patient', patient_id=patient.id) }}" 
+                                   class="text-green-600 hover:text-green-900 transition-colors" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('routes.analyse') }}?patient_id={{ patient.id }}" 
+                                   class="text-purple-600 hover:text-purple-900 transition-colors" title="Nouvelle analyse">
+                                    <i class="fas fa-microscope"></i>
+                                </a>
+                                <a href="{{ url_for('routes.download_patient_pdf', patient_id=patient.id) }}" 
+                                   class="text-orange-600 hover:text-orange-900 transition-colors" title="Télécharger PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if patients.pages > 1 %}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Affichage de {{ patients.per_page * (patients.page - 1) + 1 }} à 
+                    {{ patients.per_page * patients.page if patients.page < patients.pages else patients.total }} 
+                    sur {{ patients.total }} patients
+                </div>
+                <div class="flex space-x-1">
+                    {% if patients.has_prev %}
+                        <a href="{{ url_for('routes.patients_list', page=patients.prev_num, search=request.args.get('search', '')) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Précédent</a>
+                    {% endif %}
+                    
+                    {% for page_num in patients.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != patients.page %}
+                                <a href="{{ url_for('routes.patients_list', page=page_num, search=request.args.get('search', '')) }}" 
+                                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">{{ page_num }}</a>
+                            {% else %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded">{{ page_num }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-2 text-sm">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if patients.has_next %}
+                        <a href="{{ url_for('routes.patients_list', page=patients.next_num, search=request.args.get('search', '')) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Suivant</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-12">
+            <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun patient trouvé</h3>
+            <p class="text-gray-500 mb-6">
+                {% if request.args.get('search') %}
+                    Aucun patient ne correspond à votre recherche.
+                {% else %}
+                    Commencez par ajouter votre premier patient.
+                {% endif %}
+            </p>
+            <a href="{{ url_for('routes.create_patient') }}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>
+                Ajouter un Patient
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

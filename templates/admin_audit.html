@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
+                <i class="fas fa-history text-blue-600 mr-2"></i>
+                Journal d'Audit
+            </h1>
+            <div class="flex gap-3">
+                <button onclick="exportAuditLog()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-download mr-2"></i>
+                    Exporter CSV
+                </button>
+                <a href="{{ url_for('routes.admin_users') }}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-users mr-2"></i>
+                    Retour aux Utilisateurs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-list text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Actions</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_actions or 0 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-calendar-day text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Aujourd'hui</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.today_actions or 0 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Actions Critiques</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.critical_actions or 0 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Utilisateurs Actifs</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.active_users or 0 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Utilisateur</label>
+                    <input type="text" name="user_search" value="{{ request.args.get('user_search', '') }}" 
+                           placeholder="Nom ou email..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                    <select name="action" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Toutes les actions</option>
+                        <option value="LOGIN" {{ 'selected' if request.args.get('action') == 'LOGIN' }}>Connexion</option>
+                        <option value="LOGOUT" {{ 'selected' if request.args.get('action') == 'LOGOUT' }}>Déconnexion</option>
+                        <option value="CREATE_PATIENT" {{ 'selected' if request.args.get('action') == 'CREATE_PATIENT' }}>Création patient</option>
+                        <option value="UPDATE_PATIENT" {{ 'selected' if request.args.get('action') == 'UPDATE_PATIENT' }}>Modification patient</option>
+                        <option value="CREATE_ANALYSIS" {{ 'selected' if request.args.get('action') == 'CREATE_ANALYSIS' }}>Nouvelle analyse</option>
+                        <option value="VIEW_ANALYSIS" {{ 'selected' if request.args.get('action') == 'VIEW_ANALYSIS' }}>Consultation analyse</option>
+                        <option value="DOWNLOAD_PDF" {{ 'selected' if request.args.get('action') == 'DOWNLOAD_PDF' }}>Téléchargement PDF</option>
+                        <option value="USER_MANAGEMENT" {{ 'selected' if request.args.get('action') == 'USER_MANAGEMENT' }}>Gestion utilisateur</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date début</label>
+                    <input type="date" name="date_start" value="{{ request.args.get('date_start', '') }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
+                    <input type="date" name="date_end" value="{{ request.args.get('date_end', '') }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <div class="flex flex-col w-full gap-2">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-search mr-1"></i>
+                            Rechercher
+                        </button>
+                        <a href="{{ url_for('routes.admin_audit') }}" 
+                           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-center">
+                            <i class="fas fa-times mr-1"></i>
+                            Effacer
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Journal d'audit -->
+    <div class="bg-white rounded-lg shadow-md">
+        {% if audit_logs.items %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date/Heure</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilisateur</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Détails</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Résultat</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for log in audit_logs.items %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div>{{ log.timestamp.strftime('%d/%m/%Y') }}</div>
+                            <div class="text-xs text-gray-500">{{ log.timestamp.strftime('%H:%M:%S') }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8">
+                                    <div class="h-8 w-8 rounded-full flex items-center justify-center
+                                        {% if log.user.role.value == 'medecin' %}bg-blue-100{% elif log.user.role.value == 'administrateur' %}bg-purple-100{% else %}bg-green-100{% endif %}">
+                                        {% if log.user.role.value == 'medecin' %}
+                                            <i class="fas fa-user-md text-blue-600 text-xs"></i>
+                                        {% elif log.user.role.value == 'administrateur' %}
+                                            <i class="fas fa-shield-alt text-purple-600 text-xs"></i>
+                                        {% else %}
+                                            <i class="fas fa-user text-green-600 text-xs"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ log.user.nom }} {{ log.user.prenom }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">{{ log.user.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if log.action in ['LOGIN', 'LOGOUT'] %}bg-blue-100 text-blue-800
+                                {% elif log.action in ['CREATE_PATIENT', 'CREATE_ANALYSIS'] %}bg-green-100 text-green-800
+                                {% elif log.action in ['UPDATE_PATIENT', 'USER_MANAGEMENT'] %}bg-yellow-100 text-yellow-800
+                                {% elif log.action in ['DELETE_PATIENT', 'DELETE_ANALYSIS'] %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                
+                                {% if log.action == 'LOGIN' %}
+                                    <i class="fas fa-sign-in-alt mr-1"></i>Connexion
+                                {% elif log.action == 'LOGOUT' %}
+                                    <i class="fas fa-sign-out-alt mr-1"></i>Déconnexion
+                                {% elif log.action == 'CREATE_PATIENT' %}
+                                    <i class="fas fa-user-plus mr-1"></i>Nouveau patient
+                                {% elif log.action == 'UPDATE_PATIENT' %}
+                                    <i class="fas fa-user-edit mr-1"></i>Modif. patient
+                                {% elif log.action == 'CREATE_ANALYSIS' %}
+                                    <i class="fas fa-microscope mr-1"></i>Nouvelle analyse
+                                {% elif log.action == 'VIEW_ANALYSIS' %}
+                                    <i class="fas fa-eye mr-1"></i>Consultation
+                                {% elif log.action == 'DOWNLOAD_PDF' %}
+                                    <i class="fas fa-file-pdf mr-1"></i>Téléchargement
+                                {% elif log.action == 'USER_MANAGEMENT' %}
+                                    <i class="fas fa-users-cog mr-1"></i>Gestion utilisateur
+                                {% else %}
+                                    <i class="fas fa-cog mr-1"></i>{{ log.action.replace('_', ' ').title() }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ log.details }}">
+                                {{ log.details }}
+                            </div>
+                            {% if log.metadata %}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {% for key, value in log.metadata.items() %}
+                                        <span class="inline-block mr-2">{{ key }}: {{ value }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{{ log.ip_address }}</div>
+                            {% if log.user_agent %}
+                                <div class="text-xs text-gray-400 max-w-xs truncate" title="{{ log.user_agent }}">
+                                    {{ log.user_agent[:50] }}{% if log.user_agent|length > 50 %}...{% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if log.success %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Succès
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i>Échec
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if audit_logs.pages > 1 %}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Affichage de {{ audit_logs.per_page * (audit_logs.page - 1) + 1 }} à 
+                    {{ audit_logs.per_page * audit_logs.page if audit_logs.page < audit_logs.pages else audit_logs.total }} 
+                    sur {{ audit_logs.total }} entrées
+                </div>
+                <div class="flex space-x-1">
+                    {% if audit_logs.has_prev %}
+                        <a href="{{ url_for('routes.admin_audit', page=audit_logs.prev_num, **request.args) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Précédent</a>
+                    {% endif %}
+                    
+                    {% for page_num in audit_logs.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != audit_logs.page %}
+                                <a href="{{ url_for('routes.admin_audit', page=page_num, **request.args) }}" 
+                                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">{{ page_num }}</a>
+                            {% else %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded">{{ page_num }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-2 text-sm">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if audit_logs.has_next %}
+                        <a href="{{ url_for('routes.admin_audit', page=audit_logs.next_num, **request.args) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Suivant</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-12">
+            <i class="fas fa-history text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune entrée trouvée</h3>
+            <p class="text-gray-500">
+                {% if request.args.get('user_search') or request.args.get('action') or request.args.get('date_start') %}
+                    Aucune entrée d'audit ne correspond à vos critères de recherche.
+                {% else %}
+                    Le journal d'audit est vide.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast pour les notifications -->
+<div id="toast" class="fixed top-4 right-4 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div class="flex items-center">
+            <i class="fas fa-check mr-2"></i>
+            <span id="toastMessage">Action effectuée avec succès</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// Exporter le journal d'audit en CSV
+function exportAuditLog() {
+    const params = new URLSearchParams(window.location.search);
+    const exportUrl = '{{ url_for("routes.export_audit_csv") }}?' + params.toString();
+    
+    showToast('Export en cours...', 'info');
+    window.location.href = exportUrl;
+}
+
+// Afficher un toast
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    
+    let bgColor = 'bg-green-500';
+    if (type === 'error') bgColor = 'bg-red-500';
+    else if (type === 'info') bgColor = 'bg-blue-500';
+    else if (type === 'warning') bgColor = 'bg-yellow-500';
+    
+    toast.firstElementChild.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg`;
+    
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+// Auto-actualisation toutes les 30 secondes si on est sur la première page sans filtres
+{% if not request.args and audit_logs.page == 1 %}
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        location.reload();
+    }
+}, 30000);
+{% endif %}
+
+// Définir automatiquement la date de fin à aujourd'hui si date de début est sélectionnée
+document.querySelector('input[name="date_start"]').addEventListener('change', function() {
+    const dateEnd = document.querySelector('input[name="date_end"]');
+    if (this.value && !dateEnd.value) {
+        dateEnd.value = new Date().toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header avec navigation -->
+    <div class="mb-6">
+        <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-4">
+            <a href="{{ url_for('routes.patients_list') }}" class="hover:text-blue-600">Patients</a>
+            <i class="fas fa-chevron-right"></i>
+            <span class="text-gray-900">{{ patient.nom }} {{ patient.prenom }}</span>
+        </nav>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
+                <i class="fas fa-user text-blue-600 mr-2"></i>
+                Dossier Patient
+            </h1>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{{ url_for('routes.edit_patient', patient_id=patient.id) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-edit mr-2"></i>
+                    Modifier
+                </a>
+                <a href="{{ url_for('routes.analyse', patient_id=patient.id) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-microscope mr-2"></i>
+                    Nouvelle Analyse
+                </a>
+                <a href="{{ url_for('routes.download_patient_pdf', patient_id=patient.id) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                    <i class="fas fa-file-pdf mr-2"></i>
+                    Télécharger PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Informations patient -->
+        <div class="xl:col-span-1">
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Informations Personnelles</h2>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="flex-shrink-0 h-16 w-16">
+                            <div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-user text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-xl font-bold text-gray-900">{{ patient.nom }} {{ patient.prenom }}</h3>
+                            {% if patient.date_naissance %}
+                            <p class="text-gray-500">
+                                {% if patient.age %}{{ patient.age }} ans{% endif %}
+                                (né(e) le {{ patient.date_naissance.strftime('%d/%m/%Y') }})
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Numéro de Sécurité Sociale</label>
+                            <p class="mt-1 text-sm text-gray-900">{{ patient.numero_securite_sociale or 'Non renseigné' }}</p>
+                        </div>
+                        
+                        {% if patient.sexe %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Sexe</label>
+                            <p class="mt-1 text-sm text-gray-900">{{ patient.sexe }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if patient.email %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Email</label>
+                            <p class="mt-1 text-sm text-gray-900">
+                                <i class="fas fa-envelope text-gray-400 mr-2"></i>
+                                <a href="mailto:{{ patient.email }}" class="text-blue-600 hover:text-blue-800">{{ patient.email }}</a>
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        {% if patient.telephone %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Téléphone</label>
+                            <p class="mt-1 text-sm text-gray-900">
+                                <i class="fas fa-phone text-gray-400 mr-2"></i>
+                                <a href="tel:{{ patient.telephone }}" class="text-blue-600 hover:text-blue-800">{{ patient.telephone }}</a>
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        {% if patient.adresse %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Adresse</label>
+                            <p class="mt-1 text-sm text-gray-900">
+                                <i class="fas fa-map-marker-alt text-gray-400 mr-2"></i>
+                                {{ patient.adresse }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        {% if patient.medecin_traitant %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Médecin Traitant</label>
+                            <p class="mt-1 text-sm text-gray-900">
+                                <i class="fas fa-user-md text-gray-400 mr-2"></i>
+                                {{ patient.medecin_traitant }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Inscrit le</label>
+                            <p class="mt-1 text-sm text-gray-900">{{ patient.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="bg-white rounded-lg shadow-md mt-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Statistiques</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ patient.analyses|length }}</div>
+                            <div class="text-sm text-gray-600">Analyses</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-red-600">
+                                {{ patient.analyses|selectattr('anomalies_detectees')|list|length }}
+                            </div>
+                            <div class="text-sm text-gray-600">Anomalies</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des analyses -->
+        <div class="xl:col-span-2">
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Historique des Analyses</h2>
+                        <a href="{{ url_for('routes.analyse') }}?patient_id={{ patient.id }}" 
+                           class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i>
+                            Nouvelle Analyse
+                        </a>
+                    </div>
+                </div>
+
+                {% if patient.analyses %}
+                <div class="divide-y divide-gray-200">
+                    {% for analyse in patient.analyses|reverse %}
+                    <div class="p-6 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    {% if analyse.anomalies_detectees %}
+                                        <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                                            <i class="fas fa-exclamation-triangle text-red-600"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                            <i class="fas fa-check-circle text-green-600"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-medium text-gray-900">
+                                        Analyse du {{ analyse.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                    </h3>
+                                    <p class="text-sm text-gray-500">
+                                        Par {{ analyse.medecin.nom }} {{ analyse.medecin.prenom }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}" 
+                                   class="text-blue-600 hover:text-blue-800" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('routes.download_analyse_pdf', analyse_id=analyse.id) }}" 
+                                   class="text-orange-600 hover:text-orange-800" title="Télécharger PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                            {% if analyse.image_originale %}
+                            <div>
+                                <img src="{{ url_for('static', filename='uploaded_images/' + analyse.image_originale) }}" 
+                                     alt="Image originale" class="w-full h-32 object-cover rounded border">
+                                <p class="text-xs text-gray-500 mt-1">Image originale</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if analyse.image_resultat %}
+                            <div>
+                                <img src="{{ url_for('static', filename='results_images/' + analyse.image_resultat) }}" 
+                                     alt="Résultat analyse" class="w-full h-32 object-cover rounded border">
+                                <p class="text-xs text-gray-500 mt-1">Résultat de l'analyse</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if analyse.resultat_global %}
+                        <div class="mb-3">
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Résultat Global:</h4>
+                            <p class="text-sm text-gray-900 bg-gray-50 p-2 rounded">{{ analyse.resultat_global }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if analyse.anomalies_detectees %}
+                        <div class="mb-3">
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Anomalies Détectées:</h4>
+                            <div class="flex flex-wrap gap-1">
+                                {% for anomalie in analyse.anomalies_detectees.split(',') %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    {{ anomalie.strip() }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if analyse.commentaire_medecin %}
+                        <div class="mb-3">
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Commentaire Médical:</h4>
+                            <p class="text-sm text-gray-900 bg-blue-50 p-2 rounded border-l-4 border-blue-400">
+                                {{ analyse.commentaire_medecin }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        {% if analyse.recommendations %}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-1">Recommandations:</h4>
+                            <p class="text-sm text-gray-900 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400">
+                                {{ analyse.recommendations }}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-microscope text-gray-300 text-6xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune analyse</h3>
+                    <p class="text-gray-500 mb-6">Ce patient n'a encore aucune analyse médicale.</p>
+                    <a href="{{ url_for('routes.analyse') }}?patient_id={{ patient.id }}" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>
+                        Première Analyse
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour confirmation d'actions -->
+<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+        <div class="p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Confirmer l'action</h3>
+            <p class="text-sm text-gray-500 mb-6">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            <div class="flex justify-end space-x-3">
+                <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200" onclick="closeModal()">
+                    Annuler
+                </button>
+                <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700" onclick="confirmAction()">
+                    Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+}
+
+function confirmAction() {
+    // Logique de confirmation
+    closeModal();
+}
+</script>
+{% endblock %}

@@ -1,1 +1,19 @@
-cd /home/fadel/analyse_medicale_flask2 && python -m py_compile routes.py
+cd /home/fadel/analyse_medicale_flask2 && python -c "
+from jinja2 import Environment, FileSystemLoader
+try:
+    env = Environment(loader=FileSystemLoader('templates'))
+    template = env.get_template('sidebar.html')
+    print( Template sidebar.html est syntaxiquement correct')
+except Exception as e:
+    print( Erreur dans sidebar.html: {e}')
+"
+cd /home/fadel/analyse_medicale_flask2 && python3 -c "
+from jinja2 import Environment, FileSystemLoader
+try:
+    env = Environment(loader=FileSystemLoader('templates'))
+    template = env.get_template('sidebar.html')
+    print( Template sidebar.html est syntaxiquement correct')
+except Exception as e:
+    print( Erreur dans sidebar.html: {e}')
+"
+f''f''

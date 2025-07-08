@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
+                <i class="fas fa-users-cog text-blue-600 mr-2"></i>
+                Administration des Utilisateurs
+            </h1>
+            <div class="flex gap-3">
+                <a href="{{ url_for('routes.admin_create_user') }}" 
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Nouvel Utilisateur
+                </a>
+                <a href="{{ url_for('routes.admin_audit') }}" 
+                   class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                    <i class="fas fa-history mr-2"></i>
+                    Journal d'Audit
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-md text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Médecins</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.medecins or 0 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Patients</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.patients or 0 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Administrateurs</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.admins or 0 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <form method="GET" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                           placeholder="Rechercher par nom, email ou identifiant..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <select name="role" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les rôles</option>
+                        <option value="medecin" {{ 'selected' if request.args.get('role') == 'medecin' }}>Médecin</option>
+                        <option value="patient" {{ 'selected' if request.args.get('role') == 'patient' }}>Patient</option>
+                        <option value="administrateur" {{ 'selected' if request.args.get('role') == 'administrateur' }}>Administrateur</option>
+                    </select>
+                </div>
+                <div>
+                    <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les statuts</option>
+                        <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Actif</option>
+                        <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactif</option>
+                        <option value="suspended" {{ 'selected' if request.args.get('status') == 'suspended' }}>Suspendu</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-search mr-1"></i>
+                        Rechercher
+                    </button>
+                    <a href="{{ url_for('routes.admin_users') }}" 
+                       class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        <i class="fas fa-times mr-1"></i>
+                        Effacer
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="bg-white rounded-lg shadow-md">
+        {% if users.items %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilisateur</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rôle</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dernière Connexion</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inscription</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for user in users.items %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full flex items-center justify-center
+                                        {% if user.role == RoleEnum.medecin %}bg-blue-100{% elif user.role == RoleEnum.administrateur %}bg-purple-100{% else %}bg-green-100{% endif %}">
+                                        {% if user.role == RoleEnum.medecin %}
+                                            <i class="fas fa-user-md text-blue-600"></i>
+                                        {% elif user.role == RoleEnum.administrateur %}
+                                            <i class="fas fa-shield-alt text-purple-600"></i>
+                                        {% else %}
+                                            <i class="fas fa-user text-green-600"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ user.nom }} {{ user.prenom }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ user.email }}</div>
+                                    {% if user.specialite %}
+                                        <div class="text-xs text-gray-400">{{ user.specialite }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if user.role == RoleEnum.medecin %}bg-blue-100 text-blue-800
+                                {% elif user.role == RoleEnum.administrateur %}bg-purple-100 text-purple-800
+                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ user.role.value|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.is_active %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Actif
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    Inactif
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if user.derniere_connexion %}
+                                {{ user.derniere_connexion.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                <span class="text-gray-400">Jamais connecté</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.created_at.strftime('%d/%m/%Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <a href="{{ url_for('routes.admin_user_detail', user_id=user.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('routes.admin_edit_user', user_id=user.id) }}" 
+                                   class="text-green-600 hover:text-green-900 transition-colors" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if user.is_active %}
+                                    <button onclick="toggleUserStatus({{ user.id }}, false)" 
+                                            class="text-orange-600 hover:text-orange-900 transition-colors" title="Désactiver">
+                                        <i class="fas fa-user-times"></i>
+                                    </button>
+                                {% else %}
+                                    <button onclick="toggleUserStatus({{ user.id }}, true)" 
+                                            class="text-green-600 hover:text-green-900 transition-colors" title="Activer">
+                                        <i class="fas fa-user-check"></i>
+                                    </button>
+                                {% endif %}
+                                {% if current_user.id != user.id %}
+                                    <button onclick="resetPassword({{ user.id }})" 
+                                            class="text-purple-600 hover:text-purple-900 transition-colors" title="Réinitialiser mot de passe">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if users.pages > 1 %}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Affichage de {{ users.per_page * (users.page - 1) + 1 }} à 
+                    {{ users.per_page * users.page if users.page < users.pages else users.total }} 
+                    sur {{ users.total }} utilisateurs
+                </div>
+                <div class="flex space-x-1">
+                    {% if users.has_prev %}
+                        <a href="{{ url_for('routes.admin_users', page=users.prev_num, **request.args) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Précédent</a>
+                    {% endif %}
+                    
+                    {% for page_num in users.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != users.page %}
+                                <a href="{{ url_for('routes.admin_users', page=page_num, **request.args) }}" 
+                                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">{{ page_num }}</a>
+                            {% else %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded">{{ page_num }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-2 text-sm">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if users.has_next %}
+                        <a href="{{ url_for('routes.admin_users', page=users.next_num, **request.args) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Suivant</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-12">
+            <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur trouvé</h3>
+            <p class="text-gray-500 mb-6">
+                {% if request.args.get('search') or request.args.get('role') or request.args.get('status') %}
+                    Aucun utilisateur ne correspond à vos critères de recherche.
+                {% else %}
+                    Il n'y a aucun utilisateur dans le système.
+                {% endif %}
+            </p>
+            <a href="{{ url_for('routes.admin_create_user') }}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>
+                Créer un Utilisateur
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de confirmation -->
+<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+        <div class="p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4" id="modalTitle">Confirmer l'action</h3>
+            <p class="text-sm text-gray-500 mb-6" id="modalMessage">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            <div class="flex justify-end space-x-3">
+                <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200" onclick="closeModal()">
+                    Annuler
+                </button>
+                <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700" id="confirmBtn">
+                    Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast pour les notifications -->
+<div id="toast" class="fixed top-4 right-4 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div class="flex items-center">
+            <i class="fas fa-check mr-2"></i>
+            <span id="toastMessage">Action effectuée avec succès</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// Activer/Désactiver un utilisateur
+function toggleUserStatus(userId, activate) {
+    const action = activate ? 'activer' : 'désactiver';
+    showConfirmModal(
+        `${action.charAt(0).toUpperCase() + action.slice(1)} l'utilisateur`,
+        `Êtes-vous sûr de vouloir ${action} cet utilisateur ?`,
+        () => {
+            fetch(`/admin/users/${userId}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ active: activate })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    showToast('Erreur lors de la mise à jour', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur lors de la mise à jour', 'error');
+            });
+        }
+    );
+}
+
+// Réinitialiser le mot de passe
+function resetPassword(userId) {
+    showConfirmModal(
+        'Réinitialiser le mot de passe',
+        'Un nouveau mot de passe temporaire sera envoyé par email à cet utilisateur.',
+        () => {
+            fetch(`/admin/users/${userId}/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Mot de passe réinitialisé et envoyé par email');
+                } else {
+                    showToast('Erreur lors de la réinitialisation', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur lors de la réinitialisation', 'error');
+            });
+        }
+    );
+}
+
+// Afficher le modal de confirmation
+function showConfirmModal(title, message, callback) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('confirmBtn').onclick = () => {
+        callback();
+        closeModal();
+    };
+    document.getElementById('confirmModal').classList.remove('hidden');
+}
+
+// Fermer le modal
+function closeModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+}
+
+// Afficher un toast
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    
+    if (type === 'error') {
+        toast.firstElementChild.className = 'bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+    } else {
+        toast.firstElementChild.className = 'bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+    }
+    
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+// Fermer le modal en cliquant à l'extérieur
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

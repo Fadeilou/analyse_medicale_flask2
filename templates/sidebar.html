@@ -10,7 +10,15 @@
                     </div>
                     <div class="ml-3">
                         <div class="text-sm font-semibold text-gray-900">{{ current_user.username }}</div>
-                        <div class="text-xs text-gray-600">Technicien médical</div>
+                        <div class="text-xs text-gray-600">
+                            {% if current_user.is_admin() %}
+                                <span class="text-purple-600 font-medium">Administrateur</span>
+                            {% elif current_user.is_medecin() %}
+                                <span class="text-blue-600 font-medium">Médecin</span>
+                            {% else %}
+                                <span class="text-green-600 font-medium">Patient</span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -22,7 +30,7 @@
                 </div>
 
                 <ul class="space-y-1">
-                    <!-- Dashboard / Analyse -->
+                    <!-- Dashboard -->
                     <li>
                         <a href="{{ url_for('routes.dashboard') }}" class="sidebar-item {% if request.endpoint == 'routes.dashboard' %}active{% endif %}">
                             <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
@@ -32,7 +40,8 @@
                         </a>
                     </li>
 
-                    <!-- Nouvelle analyse -->
+                    {% if current_user.is_medecin() or current_user.is_admin() %}
+                    <!-- Nouvelle analyse (Médecins seulement) -->
                     <li>
                         <a href="{{ url_for('routes.analyse') }}" class="sidebar-item {% if request.endpoint == 'routes.analyse' %}active{% endif %}">
                             <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
@@ -42,20 +51,115 @@
                         </a>
                     </li>
 
+                    <!-- Gestion des patients -->
+                    <li>
+                        <a href="{{ url_for('routes.patients_list') }}" class="sidebar-item {% if request.endpoint == 'routes.patients_list' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <span>Patients</span>
+                        </a>
+                    </li>
+
+                    <!-- Statistiques -->
+                    <li>
+                        <a href="{{ url_for('routes.statistics_dashboard') }}" class="sidebar-item {% if request.endpoint == 'routes.statistics_dashboard' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <span>Statistiques</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
                     <!-- Liste des analyses -->
                     <li>
                         <a href="{{ url_for('routes.analyses_list') }}" class="sidebar-item {% if request.endpoint == 'routes.analyses_list' %}active{% endif %}">
                             <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
                                 <i class="fas fa-history"></i>
                             </div>
-                            <span>Historique</span>
-                            {% set analyses_count = current_user.analyses|length if current_user.is_authenticated else 0 %}
-                            {% if analyses_count > 0 %}
-                                <span class="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">{{ analyses_count }}</span>
+                            <span>{% if current_user.is_patient() %}Mes analyses{% else %}Historique{% endif %}</span>
+                            {% if current_user.is_authenticated %}
+                                {% set analyses_count = current_user.analyses|length if current_user.analyses else 0 %}
+                                {% if analyses_count > 0 %}
+                                    <span class="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">{{ analyses_count }}</span>
+                                {% endif %}
                             {% endif %}
                         </a>
                     </li>
+
+                    <!-- Notifications -->
+                    <li>
+                        <a href="{{ url_for('routes.view_notifications') }}" class="sidebar-item {% if request.endpoint == 'routes.view_notifications' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <span>Notifications</span>
+                            {% if current_user.is_authenticated %}
+                                {% set unread_count = current_user.unread_notifications_count if current_user.unread_notifications_count is defined else 0 %}
+                                {% if unread_count > 0 %}
+                                    <span class="ml-auto bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">{{ unread_count }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </a>
+                    </li>
+
+                    {% if current_user.is_medecin() or current_user.is_admin() %}
+                    <!-- Recherche et annotation -->
+                    <li>
+                        <a href="{{ url_for('routes.research_data') }}" class="sidebar-item {% if request.endpoint == 'routes.research_data' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <span>Recherche</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
+
+                <!-- Section Administration -->
+                {% if current_user.is_admin() %}
+                <div class="py-2">
+                    <hr class="border-gray-200">
+                </div>
+
+                <div class="px-3 py-2">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</p>
+                </div>
+
+                <ul class="space-y-1">
+                    <!-- Gestion des utilisateurs -->
+                    <li>
+                        <a href="{{ url_for('routes.admin_users') }}" class="sidebar-item {% if request.endpoint == 'routes.admin_users' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                            <span>Utilisateurs</span>
+                        </a>
+                    </li>
+
+                    <!-- Journal d'audit -->
+                    <li>
+                        <a href="{{ url_for('routes.admin_audit') }}" class="sidebar-item {% if request.endpoint == 'routes.admin_audit' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <span>Audit</span>
+                        </a>
+                    </li>
+
+                    <!-- Monitoring système -->
+                    <li>
+                        <a href="/monitoring/health" target="_blank" class="sidebar-item">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <span>Monitoring</span>
+                            <i class="fas fa-external-link-alt ml-auto text-xs opacity-60"></i>
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
 
                 <!-- Séparateur -->
                 <div class="py-2">
@@ -100,26 +204,29 @@
                 </ul>
 
                 <!-- Statistiques rapides -->
-                <div class="mt-8 px-3 py-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ analyses_count }}</div>
-                        <div class="text-xs text-green-700">Analyses effectuées</div>
-                    </div>
-                    <div class="mt-3 flex justify-center">
-                        <div class="w-full bg-green-200 rounded-full h-2">
-                            <div class="bg-green-500 h-2 rounded-full w-3/4"></div>
+                {% if current_user.is_authenticated %}
+                    {% set analyses_count = current_user.analyses|length if current_user.analyses else 0 %}
+                    <div class="mt-8 px-3 py-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">{{ analyses_count }}</div>
+                            <div class="text-xs text-green-700">Analyses effectuées</div>
+                        </div>
+                        <div class="mt-3 flex justify-center">
+                            <div class="w-full bg-green-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full w-3/4"></div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-green-600 text-center mt-1">
+                            {% if analyses_count < 10 %}
+                                Débutant
+                            {% elif analyses_count < 50 %}
+                                Intermédiaire
+                            {% else %}
+                                Expert
+                            {% endif %}
                         </div>
                     </div>
-                    <div class="text-xs text-green-600 text-center mt-1">
-                        {% if analyses_count < 10 %}
-                            Débutant
-                        {% elif analyses_count < 50 %}
-                            Intermédiaire
-                        {% else %}
-                            Expert
-                        {% endif %}
-                    </div>
-                </div>
+                {% endif %}
 
                 <!-- Aide rapide -->
                 <div class="mt-4 px-3 py-3 bg-blue-50 rounded-lg border border-blue-100">

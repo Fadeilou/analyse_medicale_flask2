@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
+                <i class="fas fa-bell text-blue-600 mr-2"></i>
+                Notifications
+                {% if unread_count > 0 %}
+                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full ml-2">
+                    {{ unread_count }}
+                </span>
+                {% endif %}
+            </h1>
+            <div class="flex gap-3">
+                {% if unread_count > 0 %}
+                <button onclick="markAllAsRead()" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-check-double mr-2"></i>
+                    Tout marquer comme lu
+                </button>
+                {% endif %}
+                <button onclick="refreshNotifications()" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Actualiser
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Filtrer par type:</label>
+                    <select id="typeFilter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les types</option>
+                        <option value="anomaly_detected">Anomalies détectées</option>
+                        <option value="analysis_completed">Analyses terminées</option>
+                        <option value="patient_registered">Nouveaux patients</option>
+                        <option value="system_alert">Alertes système</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Statut:</label>
+                    <select id="statusFilter" class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Toutes</option>
+                        <option value="unread">Non lues</option>
+                        <option value="read">Lues</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="bg-white rounded-lg shadow-md">
+        {% if notifications %}
+        <div class="divide-y divide-gray-200" id="notificationsList">
+            {% for notification in notifications %}
+            <div class="notification-item p-6 hover:bg-gray-50 transition-colors {% if not notification.lu %}bg-blue-50{% endif %}" 
+                 data-id="{{ notification.id }}" 
+                 data-type="{{ notification.type }}" 
+                 data-read="{{ notification.lu|lower }}">
+                
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start">
+                        <!-- Icône selon le type -->
+                        <div class="flex-shrink-0 mr-4">
+                            {% if notification.type == 'anomaly_detected' %}
+                                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                                </div>
+                            {% elif notification.type == 'analysis_completed' %}
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check-circle text-green-600"></i>
+                                </div>
+                            {% elif notification.type == 'patient_registered' %}
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user-plus text-blue-600"></i>
+                                </div>
+                            {% else %}
+                                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-info-circle text-yellow-600"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Contenu de la notification -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center mb-1">
+                                <h4 class="text-sm font-medium text-gray-900 truncate">
+                                    {{ notification.titre }}
+                                </h4>
+                                {% if not notification.lu %}
+                                    <span class="ml-2 w-2 h-2 bg-blue-600 rounded-full"></span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">{{ notification.message }}</p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>
+                                <time datetime="{{ notification.created_at.isoformat() }}">
+                                    {{ notification.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                </time>
+                                {% if notification.priorite %}
+                                    <span class="ml-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                        {% if notification.priorite == 'haute' %}bg-red-100 text-red-800
+                                        {% elif notification.priorite == 'moyenne' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-green-100 text-green-800{% endif %}">
+                                        {% if notification.priorite == 'haute' %}
+                                            <i class="fas fa-exclamation mr-1"></i>Haute
+                                        {% elif notification.priorite == 'moyenne' %}
+                                            <i class="fas fa-minus mr-1"></i>Moyenne
+                                        {% else %}
+                                            <i class="fas fa-check mr-1"></i>Basse
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-2 ml-4">
+                        {% if not notification.lu %}
+                            <button onclick="markAsRead({{ notification.id }})" 
+                                    class="text-blue-600 hover:text-blue-800 transition-colors" 
+                                    title="Marquer comme lu">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        {% endif %}
+                        
+                        {% if notification.lien_action %}
+                            <a href="{{ notification.lien_action }}" 
+                               class="text-green-600 hover:text-green-800 transition-colors" 
+                               title="Voir détails">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        {% endif %}
+                        
+                        <button onclick="deleteNotification({{ notification.id }})" 
+                                class="text-red-600 hover:text-red-800 transition-colors" 
+                                title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Métadonnées supplémentaires si disponibles -->
+                {% if notification.metadata %}
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                    <div class="text-xs text-gray-500">
+                        {% if notification.metadata.patient_name %}
+                            <span class="mr-4"><i class="fas fa-user mr-1"></i>Patient: {{ notification.metadata.patient_name }}</span>
+                        {% endif %}
+                        {% if notification.metadata.doctor_name %}
+                            <span class="mr-4"><i class="fas fa-user-md mr-1"></i>Médecin: {{ notification.metadata.doctor_name }}</span>
+                        {% endif %}
+                        {% if notification.metadata.analysis_id %}
+                            <span><i class="fas fa-microscope mr-1"></i>Analyse #{{ notification.metadata.analysis_id }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if notifications.pages > 1 %}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Affichage de {{ notifications.per_page * (notifications.page - 1) + 1 }} à 
+                    {{ notifications.per_page * notifications.page if notifications.page < notifications.pages else notifications.total }} 
+                    sur {{ notifications.total }} notifications
+                </div>
+                <div class="flex space-x-1">
+                    {% if notifications.has_prev %}
+                        <a href="{{ url_for('routes.view_notifications', page=notifications.prev_num) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Précédent</a>
+                    {% endif %}
+                    
+                    {% for page_num in notifications.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != notifications.page %}
+                                <a href="{{ url_for('routes.view_notifications', page=page_num) }}" 
+                                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">{{ page_num }}</a>
+                            {% else %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded">{{ page_num }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-2 text-sm">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if notifications.has_next %}
+                        <a href="{{ url_for('routes.view_notifications', page=notifications.next_num) }}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50">Suivant</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-12">
+            <i class="fas fa-bell-slash text-gray-300 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune notification</h3>
+            <p class="text-gray-500">Vous n'avez aucune notification pour le moment.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast pour les actions -->
+<div id="toast" class="fixed top-4 right-4 z-50 hidden">
+    <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div class="flex items-center">
+            <i class="fas fa-check mr-2"></i>
+            <span id="toastMessage">Action effectuée avec succès</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// Marquer une notification comme lue
+function markAsRead(notificationId) {
+    fetch(`/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const notificationElement = document.querySelector(`[data-id="${notificationId}"]`);
+            notificationElement.classList.remove('bg-blue-50');
+            notificationElement.setAttribute('data-read', 'true');
+            
+            // Supprimer l'indicateur non lu
+            const unreadIndicator = notificationElement.querySelector('.w-2.h-2.bg-blue-600');
+            if (unreadIndicator) unreadIndicator.remove();
+            
+            // Supprimer le bouton "marquer comme lu"
+            const markReadBtn = notificationElement.querySelector('button[onclick*="markAsRead"]');
+            if (markReadBtn) markReadBtn.remove();
+            
+            updateUnreadCount();
+            showToast('Notification marquée comme lue');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la mise à jour', 'error');
+    });
+}
+
+// Marquer toutes les notifications comme lues
+function markAllAsRead() {
+    fetch('/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la mise à jour', 'error');
+    });
+}
+
+// Supprimer une notification
+function deleteNotification(notificationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')) {
+        fetch(`/notifications/${notificationId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notificationElement = document.querySelector(`[data-id="${notificationId}"]`);
+                notificationElement.remove();
+                updateUnreadCount();
+                showToast('Notification supprimée');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
+}
+
+// Actualiser les notifications
+function refreshNotifications() {
+    location.reload();
+}
+
+// Mettre à jour le compteur de notifications non lues
+function updateUnreadCount() {
+    fetch('/notifications/unread-count')
+    .then(response => response.json())
+    .then(data => {
+        const countElement = document.querySelector('.bg-red-600.rounded-full');
+        if (data.count > 0) {
+            if (countElement) {
+                countElement.textContent = data.count;
+            }
+        } else {
+            if (countElement) {
+                countElement.remove();
+            }
+        }
+    });
+}
+
+// Afficher un toast
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    
+    if (type === 'error') {
+        toast.firstElementChild.className = 'bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+    } else {
+        toast.firstElementChild.className = 'bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+    }
+    
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+// Filtres
+document.getElementById('typeFilter').addEventListener('change', function() {
+    filterNotifications();
+});
+
+document.getElementById('statusFilter').addEventListener('change', function() {
+    filterNotifications();
+});
+
+function filterNotifications() {
+    const typeFilter = document.getElementById('typeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const notifications = document.querySelectorAll('.notification-item');
+    
+    notifications.forEach(notification => {
+        let show = true;
+        
+        if (typeFilter && notification.dataset.type !== typeFilter) {
+            show = false;
+        }
+        
+        if (statusFilter === 'read' && notification.dataset.read === 'false') {
+            show = false;
+        } else if (statusFilter === 'unread' && notification.dataset.read === 'true') {
+            show = false;
+        }
+        
+        notification.style.display = show ? 'block' : 'none';
+    });
+}
+
+// Mise à jour automatique toutes les 30 secondes
+setInterval(updateUnreadCount, 30000);
+
+// Marquer les notifications comme vues quand elles apparaissent à l'écran
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting && entry.target.dataset.read === 'false') {
+            const notificationId = entry.target.dataset.id;
+            setTimeout(() => {
+                if (entry.target.dataset.read === 'false') {
+                    markAsRead(notificationId);
+                }
+            }, 2000); // Marquer comme lu après 2 secondes de visibilité
+        }
+    });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.notification-item[data-read="false"]').forEach(notification => {
+    observer.observe(notification);
+});
+</script>
+{% endblock %}
