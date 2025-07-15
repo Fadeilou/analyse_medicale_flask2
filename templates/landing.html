@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediScan - Plateforme d'Analyse Médicale Intelligente</title>
+    <title>DiseaseDetect - Plateforme d'Analyse Médicale Intelligente</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -17,15 +17,17 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
-                        <i class="fas fa-microscope text-white text-2xl mr-3"></i>
-                        <span class="text-white text-xl font-bold">MediScan</span>
+                        <!-- <i class="fas fa-microscope text-white text-2xl mr-3"></i> -->
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="DiseaseDetect Logo" class="h-16 w-auto mr-3">
+
+                        <span class="text-gray-800 text-xl font-bold">DiseaseDetect</span>
                     </div>
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="#features" class="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition duration-300">Fonctionnalités</a>
-                        <a href="#about" class="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition duration-300">À propos</a>
-                        <a href="#contact" class="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium transition duration-300">Contact</a>
+                        <a href="#features" class="text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition duration-300">Fonctionnalités</a>
+                        <a href="#about" class="text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition duration-300">À propos</a>
+                        <a href="#contact" class="text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition duration-300">Contact</a>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -45,7 +47,7 @@
         
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <div class="animate-fade-in">
-                <h1 class="text-5xl md:text-7xl font-bold text-white mb-6">
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 mt-20">
                     Analyse Médicale
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
                         Intelligente
@@ -53,7 +55,7 @@
                 </h1>
                 <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
                     Détection automatique et précise des anomalies cellulaires grâce à l'intelligence artificielle de pointe. 
-                    Révolutionnez vos diagnostics médicaux avec MediScan.
+                    Révolutionnez vos diagnostics médicaux avec DiseaseDetect.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
                     <a href="{{ url_for('routes.register') }}" class="btn-primary text-lg px-8 py-4 animate-pulse-custom">
@@ -191,9 +193,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
                 <div class="animate-slide-in">
-                    <h2 class="text-4xl font-bold text-gray-900 mb-6">À propos de MediScan</h2>
+                    <h2 class="text-4xl font-bold text-gray-900 mb-6">À propos de DiseaseDetect</h2>
                     <p class="text-lg text-gray-600 mb-6">
-                        MediScan révolutionne le diagnostic médical en combinant l'expertise des professionnels de santé 
+                        DiseaseDetect révolutionne le diagnostic médical en combinant l'expertise des professionnels de santé 
                         avec la puissance de l'intelligence artificielle. Notre plateforme utilise des algorithmes de 
                         deep learning de pointe pour détecter automatiquement les anomalies cellulaires.
                     </p>
@@ -268,7 +270,7 @@
                     Prêt à révolutionner vos diagnostics ?
                 </h2>
                 <p class="text-xl text-blue-100 mb-8">
-                    Rejoignez des centaines de professionnels de santé qui font confiance à MediScan 
+                    Rejoignez des centaines de professionnels de santé qui font confiance à DiseaseDetect 
                     pour des analyses médicales précises et rapides.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -291,8 +293,8 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div class="col-span-1 md:col-span-2">
                     <div class="flex items-center mb-4">
-                        <i class="fas fa-microscope text-blue-400 text-2xl mr-3"></i>
-                        <span class="text-white text-xl font-bold">MediScan</span>
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="DiseaseDetect Logo" class="h-12 w-auto mr-3">
+                        <span class="text-white text-xl font-bold">DiseaseDetect</span>
                     </div>
                     <p class="text-gray-400 mb-4">
                         Plateforme d'analyse médicale intelligente utilisant l'intelligence artificielle 
@@ -322,15 +324,15 @@
                 <div>
                     <h4 class="text-white font-semibold mb-4">Contact</h4>
                     <ul class="space-y-2 text-gray-400">
-                        <li><i class="fas fa-envelope mr-2"></i>contact@mediscan.com</li>
-                        <li><i class="fas fa-phone mr-2"></i>+33 1 23 45 67 89</li>
-                        <li><i class="fas fa-map-marker-alt mr-2"></i>Paris, France</li>
+                        <li><i class="fas fa-envelope mr-2"></i>contact@diseasedetect.com</li>
+                        <li><i class="fas fa-phone mr-2"></i>+229 01 00 00 00 00</li>
+                        <li><i class="fas fa-map-marker-alt mr-2"></i>Cotonou, Bénin</li>
                     </ul>
                 </div>
             </div>
             <div class="border-t border-gray-800 mt-8 pt-8 text-center">
                 <p class="text-gray-400">
-                    © 2025 MediScan. Tous droits réservés. 
+                    © 2025 DiseaseDetect. Tous droits réservés. 
                     <span class="mx-2">|</span>
                     <a href="#" class="hover:text-white transition duration-300">Politique de confidentialité</a>
                     <span class="mx-2">|</span>

@@ -2,19 +2,30 @@
 
 /* Variables CSS personnalisées pour la charte graphique */
 :root {
-    --primary-color: #3B82F6;      /* Bleu principal */
-    --primary-dark: #1E40AF;       /* Bleu foncé */
-    --secondary-color: #10B981;    /* Vert médical */
-    --accent-color: #F59E0B;       /* Orange/Ambre */
-    --danger-color: #EF4444;       /* Rouge */
-    --warning-color: #F59E0B;      /* Orange */
-    --success-color: #10B981;      /* Vert */
-    --info-color: #3B82F6;         /* Bleu info */
-    --dark-bg: #1F2937;           /* Fond sombre */
-    --light-bg: #F8FAFC;          /* Fond clair */
-    --text-primary: #1F2937;      /* Texte principal */
-    --text-secondary: #6B7280;    /* Texte secondaire */
-    --border-color: #E5E7EB;      /* Bordures */
+    /* Couleurs Primaires (issues du logo) */
+    --color-deep-blue: #1A3D7D; /* Bleu Profond */
+    --color-tech-blue: #00A0E3; /* Bleu Tech */
+    --color-vitality-green: #92D050; /* Vert Vitalité */
+
+    /* Couleurs Secondaires (neutres) */
+    --color-text-dark-gray: #333333; /* Gris Foncé (Texte) */
+    --color-background-light-gray: #F4F6F8; /* Gris Clair (Fonds) */
+    --color-white: #FFFFFF; /* Blanc */
+
+    /* Mappage des anciennes variables aux nouvelles couleurs pour compatibilité */
+    --primary-color: var(--color-deep-blue);
+    --primary-dark: var(--color-deep-blue);
+    --secondary-color: var(--color-vitality-green);
+    --accent-color: var(--color-tech-blue);
+    --danger-color: #EF4444; /* Conservé */
+    --warning-color: #F59E0B; /* Conservé */
+    --success-color: var(--color-vitality-green);
+    --info-color: var(--color-tech-blue);
+    --dark-bg: #1F2937; /* Conservé */
+    --light-bg: var(--color-background-light-gray);
+    --text-primary: var(--color-text-dark-gray);
+    --text-secondary: #666666; /* Conservé */
+    --border-color: #E5E7EB; /* Conservé */
     --shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -22,9 +33,15 @@
 
 /* Styles généraux */
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Lato', sans-serif;
     line-height: 1.6;
     color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: var(--color-deep-blue);
 }
 
 /* Animations */
@@ -57,8 +74,8 @@ body {
 
 /* Boutons personnalisés */
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: white;
+    background: linear-gradient(135deg, var(--color-deep-blue), var(--color-tech-blue));
+    color: var(--color-white);
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -71,13 +88,13 @@ body {
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-large);
-    background: linear-gradient(135deg, var(--primary-dark), #1D4ED8);
+    background: linear-gradient(135deg, var(--color-tech-blue), var(--color-deep-blue));
 }
 
 .btn-secondary {
-    background: white;
-    color: var(--primary-color);
-    border: 2px solid var(--primary-color);
+    background: var(--color-white);
+    color: var(--color-deep-blue);
+    border: 2px solid var(--color-deep-blue);
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -86,15 +103,15 @@ body {
 }
 
 .btn-secondary:hover {
-    background: var(--primary-color);
-    color: white;
+    background: var(--color-deep-blue);
+    color: var(--color-white);
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, var(--success-color), #059669);
-    color: white;
+    background: linear-gradient(135deg, var(--color-vitality-green), #059669);
+    color: var(--color-white);
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -106,7 +123,7 @@ body {
 
 .btn-danger {
     background: linear-gradient(135deg, var(--danger-color), #DC2626);
-    color: white;
+    color: var(--color-white);
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -118,8 +135,8 @@ body {
 
 .btn-outline {
     background: transparent;
-    color: var(--primary-color);
-    border: 2px solid var(--primary-color);
+    color: var(--color-deep-blue);
+    border: 2px solid var(--color-deep-blue);
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -132,8 +149,8 @@ body {
 }
 
 .btn-outline:hover {
-    background: var(--primary-color);
-    color: white;
+    background: var(--color-deep-blue);
+    color: var(--color-white);
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }
@@ -164,8 +181,8 @@ body {
 }
 
 .card-header {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: white;
+    background: linear-gradient(135deg, var(--color-deep-blue), var(--color-tech-blue));
+    color: var(--color-white);
     padding: 1rem 1.5rem;
     border-radius: 1rem 1rem 0 0;
     margin: -1.5rem -1.5rem 1.5rem -1.5rem;
@@ -183,7 +200,7 @@ body {
 
 .alert-success {
     background-color: #ECFDF5;
-    border-color: var(--success-color);
+    border-color: var(--color-vitality-green);
     color: #065F46;
 }
 
@@ -201,14 +218,14 @@ body {
 
 .alert-info {
     background-color: #EFF6FF;
-    border-color: var(--info-color);
+    border-color: var(--color-tech-blue);
     color: #1E40AF;
 }
 
 /* Labels de test */
 .test-label-positif {
     background: linear-gradient(135deg, var(--danger-color), #DC2626);
-    color: white;
+    color: var(--color-white);
     padding: 0.5rem 1rem;
     border-radius: 2rem;
     font-weight: 600;
@@ -219,8 +236,8 @@ body {
 }
 
 .test-label-negatif {
-    background: linear-gradient(135deg, var(--success-color), #059669);
-    color: white;
+    background: linear-gradient(135deg, var(--color-vitality-green), #059669);
+    color: var(--color-white);
     padding: 0.5rem 1rem;
     border-radius: 2rem;
     font-weight: 600;
@@ -232,7 +249,7 @@ body {
 
 .test-label-indetermine {
     background: linear-gradient(135deg, var(--warning-color), #D97706);
-    color: white;
+    color: var(--color-white);
     padding: 0.5rem 1rem;
     border-radius: 2rem;
     font-weight: 600;
@@ -250,20 +267,20 @@ body {
     border-radius: 0.5rem;
     transition: all 0.3s ease;
     font-size: 1rem;
-    background: white;
+    background: var(--color-white);
 }
 
 .form-input:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--color-tech-blue);
+    box-shadow: 0 0 0 3px rgba(0, 160, 227, 0.1);
 }
 
 .form-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-text-dark-gray);
 }
 
 .form-error {
@@ -277,13 +294,54 @@ body {
 
 /* Navigation et header */
 .navbar {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: var(--color-white);
     box-shadow: var(--shadow-medium);
     backdrop-filter: blur(10px);
 }
 
+.navbar .text-white {
+    color: var(--color-deep-blue);
+}
+
+.navbar .hover\:bg-white\/20:hover {
+    background-color: rgba(26, 61, 125, 0.1); /* Lighter hover for deep blue */
+}
+
+.navbar .focus\:bg-white\/20:focus {
+    background-color: rgba(26, 61, 125, 0.1);
+}
+
+.navbar .text-white.rounded-full {
+    color: var(--color-deep-blue);
+}
+
+.navbar .text-white.rounded-full:hover {
+    background-color: rgba(26, 61, 125, 0.1);
+}
+
+.navbar .text-white.rounded-lg:hover {
+    background-color: rgba(26, 61, 125, 0.1);
+}
+
+.navbar .text-white.rounded-lg {
+    color: var(--color-deep-blue);
+}
+
+.navbar .text-white.rounded-lg .fa-user {
+    color: var(--color-deep-blue);
+}
+
+.navbar .text-white.rounded-lg .fa-chevron-down {
+    color: var(--color-deep-blue);
+}
+
+.navbar .text-white.rounded-lg .bg-white\/20 {
+    background-color: rgba(26, 61, 125, 0.1);
+    color: var(--color-deep-blue);
+}
+
 .sidebar {
-    background: white;
+    background: var(--color-white);
     box-shadow: var(--shadow-light);
     border-right: 1px solid var(--border-color);
 }
@@ -301,20 +359,20 @@ body {
 }
 
 .sidebar-item:hover {
-    background: var(--light-bg);
-    color: var(--primary-color);
+    background: var(--color-background-light-gray);
+    color: var(--color-deep-blue);
     transform: translateX(4px);
 }
 
 .sidebar-item.active {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: white;
+    background: linear-gradient(135deg, var(--color-deep-blue), var(--color-tech-blue));
+    color: var(--color-white);
     box-shadow: var(--shadow-light);
 }
 
 /* Hero section pour landing page */
 .hero-gradient {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark), var(--secondary-color));
+    background: linear-gradient(135deg, var(--color-deep-blue), var(--color-tech-blue), var(--color-vitality-green));
     background-size: 400% 400%;
     animation: gradient 15s ease infinite;
 }
@@ -328,12 +386,12 @@ body {
 .feature-icon {
     width: 3rem;
     height: 3rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(135deg, var(--color-deep-blue), var(--color-tech-blue));
     border-radius: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--color-white);
     font-size: 1.5rem;
     box-shadow: var(--shadow-medium);
 }
@@ -342,10 +400,10 @@ body {
 
 /* Stat Cards */
 .stat-card {
-    background: white;
+    background: var(--color-white);
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color);
     padding: 1rem;
     transition: box-shadow 0.3s ease;
 }
@@ -361,7 +419,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--color-white);
     font-size: 1.25rem;
 }
 
@@ -377,7 +435,7 @@ body {
 
 .badge-success {
     background-color: #dcfce7;
-    color: #166534;
+    color: var(--color-vitality-green);
 }
 
 .badge-danger {
@@ -392,7 +450,7 @@ body {
 
 .badge-info {
     background-color: #dbeafe;
-    color: #1e40af;
+    color: var(--color-tech-blue);
 }
 
 /* Toggle Switch */
@@ -408,7 +466,7 @@ body {
 }
 
 .toggle-switch.active {
-    background-color: #3b82f6;
+    background-color: var(--color-tech-blue);
 }
 
 .toggle-slider {
@@ -417,7 +475,7 @@ body {
     left: 0.125rem;
     width: 1.25rem;
     height: 1.25rem;
-    background-color: white;
+    background-color: var(--color-white);
     border-radius: 9999px;
     transition: transform 0.2s ease;
 }
@@ -431,11 +489,11 @@ body {
     width: 5rem;
     height: 5rem;
     border-radius: 9999px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, var(--color-deep-blue), var(--color-tech-blue));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--color-white);
     font-size: 1.5rem;
     font-weight: 700;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);

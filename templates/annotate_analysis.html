@@ -70,7 +70,7 @@
                             <label class="block text-gray-500 font-medium mb-2">Score de confiance:</label>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ analyse.confiance_score * 100 }}%"></div>
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ analyse.confiance_score * 100 }}%;"></div>
                                 </div>
                                 <span class="ml-3 text-sm font-medium text-gray-900">{{ "%.1f"|format(analyse.confiance_score * 100) }}%</span>
                             </div>
@@ -278,7 +278,7 @@
                 <div class="p-6">
                     <div class="space-y-4">
                         {% for annotation in analyse.annotations|reverse %}
-                        {% if annotation.id != existing_annotation.id if existing_annotation %}
+                        {% if existing_annotation and annotation.id != existing_annotation.id %}
                         <div class="border-l-4 border-gray-300 pl-4">
                             <div class="flex items-center justify-between mb-2">
                                 <h4 class="text-sm font-medium text-gray-900">{{ annotation.type|title }}</h4>

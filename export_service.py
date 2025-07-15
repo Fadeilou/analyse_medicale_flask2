@@ -216,7 +216,7 @@ class ExportService:
                 fhir_data["conclusionCode"].append({
                     "coding": [
                         {
-                            "system": "http://mediscan.local/anomalies",
+                            "system": "http://diseasedetect.local/anomalies",
                             "code": anomalie.upper().replace(' ', '_'),
                             "display": anomalie
                         }
@@ -234,12 +234,12 @@ class ExportService:
         """Exporter une analyse au format HL7 v2"""
         
         # En-tête MSH (Message Header)
-        msh = "MSH|^~\\&|MediScan|Hospital|LIS|Lab|"
+        msh = "MSH|^~\&|DiseaseDetect|Hospital|LIS|Lab|"
         msh += datetime.now().strftime("%Y%m%d%H%M%S")
         msh += "||ORU^R01^ORU_R01|1|P|2.5.1|||NE|NE|FR\r"
         
         # Segment PID (Patient Identification)
-        pid = f"PID|1||{analysis_data.patient.id}^^^MediScan||"
+        pid = f"PID|1||{analysis_data.patient.id}^^^DiseaseDetect||"
         pid += f"{analysis_data.patient.nom}^{analysis_data.patient.prenom}||"
         if analysis_data.patient.date_naissance:
             pid += analysis_data.patient.date_naissance.strftime("%Y%m%d")

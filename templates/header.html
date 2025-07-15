@@ -5,7 +5,7 @@
             <div class="flex items-center justify-start">
                 <!-- Bouton Hamburger pour Sidebar Mobile -->
                 {% if dashboard_content %}
-                <button id="toggleSidebarMobile" aria-expanded="false" aria-controls="sidebar" class="p-2 text-white rounded cursor-pointer lg:hidden hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-white/20 transition duration-300">
+                <button id="toggleSidebarMobile" aria-expanded="false" aria-controls="sidebar" class="p-2 text-gray-800 rounded cursor-pointer lg:hidden hover:bg-gray-100 focus:bg-gray-100 focus:ring-2 focus:ring-gray-200 transition duration-300">
                     <span class="sr-only">Ouvrir le menu principal</span>
                     <svg id="toggleSidebarMobileHamburger" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
@@ -18,8 +18,8 @@
                 
                 <!-- Logo et titre -->
                 <a href="{% if current_user.is_authenticated %}{{ url_for('routes.dashboard') }}{% else %}{{ url_for('routes.landing') }}{% endif %}" class="flex ml-2 md:mr-24 items-center group">
-                    <i class="fas fa-microscope text-white text-2xl mr-3 group-hover:animate-pulse"></i>
-                    <span class="self-center text-xl font-bold sm:text-2xl whitespace-nowrap text-white">MediScan</span>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="DiseaseDetect Logo" class="h-16 w-auto mr-3">
+                    <span class="self-center text-xl font-bold sm:text-2xl whitespace-nowrap text-gray-800">DiseaseDetect</span>
                 </a>
             </div>
 
@@ -27,7 +27,7 @@
             <div class="flex items-center space-x-4">
                 {% if current_user.is_authenticated %}
                     <!-- Notifications -->
-                    <a href="{{ url_for('routes.view_notifications') }}" class="p-2 text-white rounded-full hover:bg-white/20 transition duration-300 relative">
+                    <a href="{{ url_for('routes.view_notifications') }}" class="p-2 text-gray-800 rounded-full hover:bg-gray-100 transition duration-300 relative">
                         <i class="fas fa-bell text-lg"></i>
                         {% set unread_count = current_user.unread_notifications_count if current_user.unread_notifications_count is defined else 0 %}
                         {% if unread_count > 0 %}
@@ -37,8 +37,8 @@
 
                     <!-- Menu utilisateur -->
                     <div class="relative group">
-                        <button class="flex items-center space-x-3 p-2 text-white rounded-lg hover:bg-white/20 transition duration-300">
-                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                        <button class="flex items-center space-x-3 p-2 text-gray-800 rounded-lg hover:bg-gray-100 transition duration-300">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                                 <i class="fas fa-user text-sm"></i>
                             </div>
                             <div class="hidden md:block text-left">

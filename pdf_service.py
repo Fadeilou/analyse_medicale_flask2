@@ -48,7 +48,7 @@ class PDFReportService:
         story = []
         
         # En-tête
-        story.append(Paragraph("MEDISCAN", self.styles['CustomTitle']))
+        story.append(Paragraph("DISEASEDETECT", self.styles['CustomTitle']))
         story.append(Paragraph("Rapport d'Analyse Médicale", self.styles['CustomTitle']))
         story.append(Spacer(1, 20))
         
@@ -129,7 +129,7 @@ class PDFReportService:
         story.append(Paragraph("_" * 50, self.styles['Normal']))
         story.append(Paragraph(f"Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}", 
                               self.styles['Normal']))
-        story.append(Paragraph("Ce rapport a été généré automatiquement par MediScan", 
+        story.append(Paragraph("Ce rapport a été généré automatiquement par DiseaseDetect", 
                               self.styles['Normal']))
         
         # Construire le PDF
@@ -146,7 +146,7 @@ class PDFReportService:
         story = []
         
         # En-tête
-        story.append(Paragraph("MEDISCAN", self.styles['CustomTitle']))
+        story.append(Paragraph("DISEASEDETECT", self.styles['CustomTitle']))
         story.append(Paragraph("Historique Patient", self.styles['CustomTitle']))
         story.append(Spacer(1, 20))
         

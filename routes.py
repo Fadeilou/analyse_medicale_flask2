@@ -124,7 +124,7 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember_me.data)
-            flash('Connexion réussie! Bienvenue sur MediScan.', 'success')
+            flash('Connexion réussie! Bienvenue sur DiseaseDetect.', 'success')
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('routes.dashboard'))
         else: 
@@ -145,7 +145,7 @@ def register():
             user = User(username=form.username.data, password=hashed_password)
             db.session.add(user)
             db.session.commit()
-            flash('Compte créé avec succès! Bienvenue dans la communauté MediScan.', 'success')
+            flash('Compte créé avec succès! Bienvenue dans la communauté DiseaseDetect.', 'success')
             flash('Vous pouvez maintenant vous connecter avec vos identifiants.', 'info')
             return redirect(url_for('routes.login'))
         
@@ -162,7 +162,7 @@ def register():
 @login_required
 def logout():
     logout_user()
-    flash('Déconnexion réussie. À bientôt sur MediScan !', 'info')
+    flash('Déconnexion réussie. À bientôt sur DiseaseDetect !', 'info')
     return redirect(url_for('routes.landing'))
 
 @routes.route('/profile')
@@ -923,7 +923,7 @@ def export_statistics_csv():
     }
     
     csv_data = export_service.export_statistics_csv(stats_data)
-    return export_service.create_csv_response(csv_data, 'statistiques_mediscan')
+    return export_service.create_csv_response(csv_data, 'statistiques_diseasedetect')
 
 # ============================================================================
 # NOTIFICATIONS
@@ -1207,7 +1207,7 @@ def export_audit_csv():
     audit_logs = query.limit(10000).all()
     
     csv_data = export_service.export_audit_csv(audit_logs)
-    return export_service.create_csv_response(csv_data, 'audit_log_mediscan')
+    return export_service.create_csv_response(csv_data, 'audit_log_diseasedetect')
 
 # ============================================================================
 # RECHERCHE ET ANNOTATION (POUR LA RECHERCHE MÉDICALE)
@@ -1285,7 +1285,7 @@ def annotate_analysis(analyse_id):
     # Récupérer l'annotation existante pour la recherche
     existing_annotation = Annotation.query.filter_by(
         analyse_id=analyse_id,
-        type='research'
+        type='RESEARCH' # Utilisation de la nouvelle colonne 'type'
     ).first()
     
     if existing_annotation and request.method == 'GET':
@@ -1349,7 +1349,7 @@ def export_research_data():
     
     if format_type == 'csv':
         csv_data = export_service.export_analyses_csv(analyses)
-        return export_service.create_csv_response(csv_data, 'research_data_mediscan')
+        return export_service.create_csv_response(csv_data, 'research_data_diseasedetect')
     elif format_type == 'fhir':
         # Exporter la première analyse en FHIR pour exemple
         if analyses:

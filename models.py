@@ -141,6 +141,7 @@ class Annotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     analyse_id = db.Column(db.Integer, db.ForeignKey('analyse_result.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False, default='MANUAL') # e.g., 'RESEARCH', 'VALIDATION', 'MANUAL'
     correction_proposee = db.Column(db.String(200), nullable=True) # Correction du diagnostic
     commentaire = db.Column(db.Text, nullable=True)
     confiance = db.Column(db.Float, nullable=True) # Niveau de confiance de 0 à 1

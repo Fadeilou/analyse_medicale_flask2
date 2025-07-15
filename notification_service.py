@@ -84,15 +84,15 @@ class NotificationService:
         
         # Envoyer email si le patient a fourni son email
         if patient.email:
-            titre = "Résultats d'analyse MediScan disponibles"
+            titre = "Résultats d'analyse DiseaseDetect disponibles"
             message = f"""Bonjour {patient.prenom} {patient.nom},
 
-Vos résultats d'analyse du {analyse_result.date_analyse.strftime('%d/%m/%Y')} sont maintenant disponibles sur votre espace patient MediScan.
+Vos résultats d'analyse du {analyse_result.date_analyse.strftime('%d/%m/%Y')} sont maintenant disponibles sur votre espace patient DiseaseDetect.
 
 Connectez-vous à votre compte pour consulter vos résultats.
 
 Cordialement,
-L'équipe MediScan"""
+L'équipe DiseaseDetect"""
             
             self.send_email_notification(patient.email, titre, message)
     
