@@ -13,9 +13,12 @@ class Config:
     
     # Configuration de la base de données
     # En production, utiliser la variable d'environnement DATABASE_URL
-    DATABASE_URL = os.environ.get('DATABASE_URL') or \
-        'postgresql://postgres.ckxdpngmuuqdzdlsdiqb:iXBWWRCxGyWczCQLZkrbgkiTDqcmpVpecO@aws-0-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require'
+    # DATABASE_URL = os.environ.get('DATABASE_URL') or \
+    #     'postgresql://postgres.ckxdpngmuuqdzdlsdiqb:iXBWWRCxGyWczCQLZkrbgkiTDqcmpVpecO@aws-0-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require'
     
+    DATABASE_URL = os.environ.get('DATABASE_URL') or \
+        'postgresql://blood_8d8k_user:b7qfRPryssEyeSMO8AuGDt5a0bz1NX0d@dpg-d1summbuibrs738me1og-a.oregon-postgres.render.com/blood_8d8k'
+
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
