@@ -17,7 +17,8 @@ class Config:
     #     'postgresql://postgres.ckxdpngmuuqdzdlsdiqb:iXBWWRCxGyWczCQLZkrbgkiTDqcmpVpecO@aws-0-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require'
     
     DATABASE_URL = os.environ.get('DATABASE_URL') or \
-        'postgresql://blood_8d8k_user:b7qfRPryssEyeSMO8AuGDt5a0bz1NX0d@dpg-d1summbuibrs738me1og-a.oregon-postgres.render.com/blood_8d8k'
+        'postgresql://blood_wki0_user:mER5oOdlXs5M1LlFq5zgryN1hrBMyPgQ@dpg-d48rolur433s73a8eh00-a.oregon-postgres.render.com/blood_wki0'
+    
 
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
