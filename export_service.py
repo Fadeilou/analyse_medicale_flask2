@@ -159,7 +159,31 @@ class ExportService:
             writer.writerow(['Type', 'Nombre'])
             for anomaly_type, count in stats_data['anomaly_types_data'].items():
                 writer.writerow([anomaly_type, count])
+            
+        # Top patients
+        if stats_data.get('top_anomaly_patients'):
+            writer.writerow([])
+            writer.writerow(['PATIENTS AVEC ANOMALIES'])
+            writer.writerow(['Patient', 'Nombre d\'anomalies'])
+            for entry in stats_data['top_anomaly_patients']:
+                patient = entry.get('patient')
+                writer.writerow([
+                    f"{patient.prenom} {patient.nom}" if patient else 'Inconnu',
+                    entry.get('anomaly_count', 0)
+                ])
         
+        # Top médecins
+        if stats_data.get('top_doctors'):
+            writer.writerow([])
+            writer.writerow(['MÉDECINS LES PLUS ACTIFS'])
+            writer.writerow(['Médecin', 'Nombre d\'analyses'])
+            for entry in stats_data['top_doctors']:
+                doctor = entry.get('doctor')
+                writer.writerow([
+                    f"Dr {doctor.prenom} {doctor.nom}" if doctor else 'Inconnu',
+                    entry.get('analysis_count', 0)
+                ])
+
         output.seek(0)
         return output.getvalue()
 

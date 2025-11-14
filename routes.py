@@ -6,7 +6,7 @@ from models import db, User, Patient, AnalyseResult, RoleEnum, Notification, Aud
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import date, datetime, timedelta, timezone
-from forms import RegistrationForm
+from forms import RegistrationForm, AdminUserForm
 from login_form import LoginForm, ForgotPasswordForm, ResetPasswordForm
 from annotation_forms import AnnotationForm, PatientForm, CommentForm, UserForm, BulkAnnotationForm
 from auth_decorators import medecin_required, admin_required, require_role, log_user_activity, audit_action
@@ -15,10 +15,12 @@ from pdf_service import pdf_service
 from export_service import export_service
 import secrets
 import string
+import json
 import cv2
 import numpy as np
 import traceback
-from sqlalchemy import func, and_, or_, desc
+from sqlalchemy import func, and_, or_, desc, case
+from sqlalchemy.orm import joinedload
 
 def utcnow():
     """Timezone-aware UTC now function"""
@@ -44,8 +46,21 @@ ALLOWED_EXTENSIONS_IMAGES = {'png', 'jpg', 'jpeg'}
 # --- Configuration du modèle d'IA ---
 # --- !!! METTEZ ICI LE CHEMIN VERS VOTRE MODÈLE .pt !!! ---
 MODEL_PATH = 'best.pt' # ou 'models/best.pt' etc.
-CONFIDENCE_THRESHOLD = 0.4 # Seuil de confiance pour les détections
+CONFIDENCE_THRESHOLD = 0.3 # Légèrement plus bas pour capturer davantage de cellules
+MAX_DETECTIONS = 400 # Autoriser un nombre élevé de cellules sur une image
 CLASS_NAMES = ["DREPANOCYTES", "ELLIPTOCYTES", "SCHIZOCYTES", "SAINS"] # Ajout de la classe SAINS
+CLASS_DISPLAY_NAMES = {
+    "DREPANOCYTES": "Drépanocytose",
+    "ELLIPTOCYTES": "Elliptocytose",
+    "SCHIZOCYTES": "Schizocytose",
+    "SAINS": "Cellules normales"
+}
+CLASS_COLORS = {
+    "DREPANOCYTES": {"bgr": (60, 110, 255), "hex": "#FF6B6B"},
+    "ELLIPTOCYTES": {"bgr": (102, 0, 204), "hex": "#A855F7"},
+    "SCHIZOCYTES": {"bgr": (34, 139, 34), "hex": "#22C55E"},
+    "SAINS": {"bgr": (255, 215, 0), "hex": "#FACC15"}
+}
 
 # --- Chargement du modèle d'IA (variable globale) ---
 ai_model = None
@@ -241,9 +256,15 @@ def analyse(patient_id=None):
                     # Lire le contenu pour l'analyse
                     file_content = image_file.read()
                     original_filename = secure_filename(image_file.filename)
+                    file_ext = os.path.splitext(original_filename)[1].lower()
+                    unique_upload_name = f"input_{uuid.uuid4().hex[:8]}{file_ext}"
+                    upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_upload_name)
+                    with open(upload_path, 'wb') as upload_handle:
+                        upload_handle.write(file_content)
 
                     # --- Analyse de l'image avec l'IA ---
                     resultat_analyse = analyse_image_ai(file_content, original_filename)
+                    resultat_analyse['input_image_filename'] = unique_upload_name
                     image_filename_result = resultat_analyse.get('output_image_filename')
 
                     # Enregistrer l'activité
@@ -304,47 +325,84 @@ def analyse_image_ai(image_file_content, original_filename):
         # Exécuter l'inférence avec des paramètres optimisés
         print("Début de l'inférence...")
         results = ai_model.predict(
-            img, 
-            conf=CONFIDENCE_THRESHOLD, 
+            img,
+            conf=CONFIDENCE_THRESHOLD,
             verbose=False,
             device='cpu',  # Forcer l'utilisation du CPU sur Render.com
-            imgsz=640      # Taille d'image optimisée
+            imgsz=640,      # Taille d'image optimisée
+            max_det=MAX_DETECTIONS
         )
         print("Inférence terminée.")
 
-        num_detections = 0
-        detected_diseases = set()
+        counts = {name: 0 for name in CLASS_NAMES}
+        percent_by_class = {name: 0.0 for name in CLASS_NAMES}
+        cell_details = []
         output_img_array = img.copy() # Commencer avec l'image originale
 
-        if results and hasattr(results[0], 'masks') and results[0].masks is not None:
-            num_detections = len(results[0].boxes)
-            if num_detections > 0:
-                # Récupérer les classes détectées d'abord pour déterminer le statut
-                for box in results[0].boxes:
-                    class_id = int(box.cls.item())
-                    if 0 <= class_id < len(CLASS_NAMES):
-                        disease_name = CLASS_NAMES[class_id]
-                        detected_diseases.add(disease_name)
-                    else:
-                        print(f"Warning: Invalid class_id {class_id} detected in results.")
+        if results and results[0].boxes is not None and len(results[0].boxes) > 0:
+            boxes = results[0].boxes
+            for idx, box in enumerate(boxes):
+                class_id = int(box.cls.item()) if box.cls is not None else -1
+                if 0 <= class_id < len(CLASS_NAMES):
+                    disease_name = CLASS_NAMES[class_id]
+                    counts[disease_name] += 1
+                    confidence = float(box.conf.item()) if box.conf is not None else None
+                    cell_details.append({
+                        "class": disease_name,
+                        "confidence": round(confidence * 100, 2) if confidence is not None else None,
+                        "box": box.xyxy[0].tolist() if box.xyxy is not None else None
+                    })
+                else:
+                    print(f"Warning: Invalid class_id {class_id} detected in results.")
+
+            # Dessiner des masques colorés personnalisés pour chaque classe détectée
+            if hasattr(results[0], 'masks') and results[0].masks is not None:
+                masks_data = results[0].masks.data.cpu().numpy()
+                mask_count = min(len(masks_data), len(boxes))
+                h, w = img.shape[:2]
+                for idx in range(mask_count):
+                    class_id = int(boxes.cls[idx].item()) if boxes.cls is not None else -1
+                    if not (0 <= class_id < len(CLASS_NAMES)):
+                        continue
+                    class_name = CLASS_NAMES[class_id]
+                    color_bgr = CLASS_COLORS.get(class_name, {}).get('bgr', (0, 255, 255))
+                    mask = masks_data[idx]
+                    if mask.shape[1] != w or mask.shape[0] != h:
+                        mask = cv2.resize(mask, (w, h))
+                    mask_binary = mask > 0.5
+                    if not np.any(mask_binary):
+                        continue
+                    overlay_color = np.zeros_like(output_img_array, dtype=np.uint8)
+                    overlay_color[:] = color_bgr
+                    output_img_array[mask_binary] = (
+                        0.55 * output_img_array[mask_binary] +
+                        0.45 * overlay_color[mask_binary]
+                    ).astype(np.uint8)
 
         # Déterminer le statut et la recommandation
-        if num_detections == 0:
+        total_cells = sum(counts.values())
+        abnormal_classes = [name for name in CLASS_NAMES if name != "SAINS" and counts[name] > 0]
+        dominant_condition = max(abnormal_classes, key=lambda name: counts[name]) if abnormal_classes else None
+
+        if total_cells > 0:
+            for name, count in counts.items():
+                percent_by_class[name] = round((count / total_cells) * 100, 2)
+
+        if total_cells == 0:
             # Aucune détection du tout - cas d'erreur ou image non analysable
             final_status = "Indéterminé"
             recommandation = "Aucune cellule détectée. Veuillez vérifier la qualité de l'image."
+            output_img_array = img.copy()
             detected_diseases_list = []
-        elif "SAINS" in detected_diseases:
-            # Classe SAINS détectée - priorité donnée au statut sain même si d'autres classes sont présentes
+        elif not abnormal_classes:
             final_status = "Sain"
-            recommandation = "Cellules saines détectées. Test négatif."
+            recommandation = "Cellules normales détectées. Aucun signe d'anomalie."
             detected_diseases_list = ["SAINS"]
-            # Pour les patients sains, garder l'image originale sans masques
             output_img_array = img.copy()
         else:
             # Seulement des maladies détectées - appliquer les masques
             final_status = "Malade"
-            detected_diseases_list = sorted(list(detected_diseases))
+            detected_diseases_list = sorted(abnormal_classes, key=lambda name: counts[name], reverse=True)
             reco_parts = []
             if "DREPANOCYTES" in detected_diseases_list: 
                 reco_parts.append("Présence de drépanocytes. Électrophorèse de l'hémoglobine suggérée.")
@@ -355,14 +413,6 @@ def analyse_image_ai(image_file_content, original_filename):
             if not reco_parts: 
                 reco_parts.append("Cellules anormales détectées. Examen médical requis.")
             recommandation = " ".join(reco_parts)
-            
-            # Appliquer les masques seulement pour les malades
-            if results and hasattr(results[0], 'masks') and results[0].masks is not None and num_detections > 0:
-                output_img_array = results[0].plot(
-                    boxes=False,   # Ne pas dessiner les rectangles
-                    labels=False,  # Ne pas dessiner les textes (classe + confiance)
-                    masks=True     # Dessiner les masques
-                )
 
 
         # Sauvegarder l'image résultat
@@ -384,11 +434,31 @@ def analyse_image_ai(image_file_content, original_filename):
             output_filename = None
 
 
+        legend_entries = []
+        for code in CLASS_NAMES:
+            legend_entries.append({
+                "code": code,
+                "label": CLASS_DISPLAY_NAMES.get(code, code.title()),
+                "color": CLASS_COLORS.get(code, {}).get('hex', '#999999'),
+                "count": counts.get(code, 0),
+                "percentage": percent_by_class.get(code, 0.0)
+            })
+
+        cell_stats = {
+            "total_cells": total_cells,
+            "counts": counts,
+            "percentages": percent_by_class,
+            "dominant_condition": CLASS_DISPLAY_NAMES.get(dominant_condition, dominant_condition) if dominant_condition else None
+        }
+
         return {
             "status": final_status,
             "diseases": detected_diseases_list,
             "recommandation": recommandation,
-            "output_image_filename": output_filename
+            "output_image_filename": output_filename,
+            "cell_stats": cell_stats,
+            "legend": legend_entries,
+            "dominant_condition_code": dominant_condition
         }
 
     except Exception as e:
@@ -421,6 +491,16 @@ def save_analysis():
             status = request.form['status'] # "Sain" ou "Malade"
             diseases_str = request.form['diseases'] # String séparée par des virgules
             recommandation = request.form['recommandation']
+            input_image_filename = request.form.get('input_image_filename')
+            cell_stats_json = request.form.get('cell_stats_json')
+            legend_json = request.form.get('legend_json')
+
+            cell_stats_data = json.loads(cell_stats_json) if cell_stats_json else None
+            legend_data = json.loads(legend_json) if legend_json else None
+            confidence_score = None
+            if cell_stats_data and isinstance(cell_stats_data.get('percentages'), dict) and cell_stats_data['percentages']:
+                max_percentage = max(cell_stats_data['percentages'].values())
+                confidence_score = round(max_percentage / 100, 4) if max_percentage else None
 
             patient_date_naissance = date.fromisoformat(patient_date_naissance_str) if patient_date_naissance_str else None
             test_positif = (status == 'Malade')
@@ -445,15 +525,23 @@ def save_analysis():
             # --- Chemin de l'image résultat pour la DB ---
             # Le chemin doit être relatif au dossier 'static' pour l'affichage HTML
             image_path_db = os.path.join('results_images', output_image_filename)
+            image_originale_db = input_image_filename
 
             analyse_result = AnalyseResult(
                 image_path=image_path_db, # Chemin vers l'image RÉSULTAT
                 test_positif=test_positif,
                 type_anomalie=type_anomalie_db, # Stocke la liste comme string
                 recommandation=recommandation,
+                resultat_global=status,
+                confiance_score=confidence_score,
                 patient_id=patient_id,
                 user_id=current_user.id,
-                image_filename=output_image_filename # Optionnel, garder si utile ailleurs
+                image_filename=output_image_filename,
+                image_resultat=output_image_filename,
+                image_originale=image_originale_db,
+                cell_stats=cell_stats_data,
+                legend=legend_data,
+                resultats_json=cell_stats_data
             )
             db.session.add(analyse_result)
             db.session.commit()
@@ -839,6 +927,83 @@ def download_patient_pdf(patient_id):
 # STATISTIQUES ET TABLEAU DE BORD
 # ============================================================================
 
+def build_statistics_snapshot(period_days):
+    date_limit = utcnow() - timedelta(days=period_days)
+    total_analyses = AnalyseResult.query.count()
+    total_anomalies = AnalyseResult.query.filter(AnalyseResult.type_anomalie.isnot(None)).count()
+    stats = {
+        'total_patients': Patient.query.count(),
+        'total_analyses': total_analyses,
+        'total_anomalies': total_anomalies,
+        'precision_rate': round(((total_analyses - total_anomalies) / total_analyses) * 100, 1) if total_analyses else 0.0,
+        'new_patients_period': Patient.query.filter(Patient.created_at >= date_limit).count(),
+        'analyses_period': AnalyseResult.query.filter(AnalyseResult.created_at >= date_limit).count(),
+        'anomalies_today': AnalyseResult.query.filter(and_(func.date(AnalyseResult.created_at) == date.today(), AnalyseResult.type_anomalie.isnot(None))).count(),
+        'pending_reviews': AnalyseResult.query.filter(AnalyseResult.commentaire_medecin.is_(None)).count()
+    }
+
+    # Analyses quotidiennes
+    daily_rows = db.session.query(
+        func.date(AnalyseResult.created_at).label('day'),
+        func.count(AnalyseResult.id).label('count'),
+        func.sum(case((AnalyseResult.test_positif == True, 1), else_=0)).label('anomalies')
+    ).filter(AnalyseResult.created_at >= date_limit).group_by('day').order_by('day').all()
+    stats['daily_analyses_data'] = [
+        {
+            'date': day.strftime('%d/%m'),
+            'analyses': total,
+            'anomalies': anomalies or 0
+        }
+        for day, total, anomalies in daily_rows
+    ]
+
+    # Répartition des anomalies
+    anomaly_counts = {}
+    anomaly_results = AnalyseResult.query.filter(
+        AnalyseResult.type_anomalie.isnot(None),
+        AnalyseResult.created_at >= date_limit
+    ).all()
+    for analyse in anomaly_results:
+        variants = [a.strip() for a in analyse.type_anomalie.split(',')] if analyse.type_anomalie else []
+        for anomaly in variants:
+            if anomaly:
+                anomaly_counts[anomaly] = anomaly_counts.get(anomaly, 0) + 1
+    stats['anomaly_types_data'] = anomaly_counts
+
+    # Top patients et médecins
+    patient_rows = db.session.query(
+        Patient,
+        func.count(AnalyseResult.id).label('anomaly_count')
+    ).join(AnalyseResult).filter(
+        AnalyseResult.type_anomalie.isnot(None),
+        AnalyseResult.created_at >= date_limit
+    ).group_by(Patient.id).order_by(desc('anomaly_count')).limit(5).all()
+    stats['top_anomaly_patients'] = [
+        {'patient': patient, 'anomaly_count': count}
+        for patient, count in patient_rows
+    ]
+
+    doctor_rows = db.session.query(
+        User,
+        func.count(AnalyseResult.id).label('analysis_count')
+    ).join(AnalyseResult, AnalyseResult.user_id == User.id).filter(
+        User.role == RoleEnum.MEDECIN,
+        AnalyseResult.created_at >= date_limit
+    ).group_by(User.id).order_by(desc('analysis_count')).limit(5).all()
+    stats['top_doctors'] = [
+        {'doctor': doctor, 'analysis_count': count}
+        for doctor, count in doctor_rows
+    ]
+    stats['max_doctor_analyses'] = max((row['analysis_count'] for row in stats['top_doctors']), default=0)
+
+    stats['recent_analyses'] = AnalyseResult.query.options(
+        joinedload(AnalyseResult.patient),
+        joinedload(AnalyseResult.medecin)
+    ).order_by(desc(AnalyseResult.created_at)).limit(10).all()
+
+    return stats
+
+
 @routes.route('/statistics')
 @login_required
 @medecin_required
@@ -846,56 +1011,12 @@ def download_patient_pdf(patient_id):
 def statistics_dashboard():
     """Tableau de bord des statistiques pour les médecins"""
     period = request.args.get('period', '30')
-    
-    # Convertir en entier et valider
     try:
         period_days = int(period)
     except (ValueError, TypeError):
         period_days = 30
-    
-    # Date limite selon la période
-    date_limit = utcnow() - timedelta(days=period_days)
-    
-    # Statistiques principales
-    stats = {
-        'total_patients': Patient.query.count(),
-        'total_analyses': AnalyseResult.query.count(),
-        'total_anomalies': AnalyseResult.query.filter(
-            AnalyseResult.type_anomalie.isnot(None)
-        ).count(),
-        'precision_rate': 95.2,  # À calculer selon vos métriques
-        'new_patients_period': Patient.query.filter(
-            Patient.created_at >= date_limit
-        ).count(),
-        'analyses_period': AnalyseResult.query.filter(
-            AnalyseResult.created_at >= date_limit
-        ).count(),
-        'anomalies_today': AnalyseResult.query.filter(
-            and_(
-                func.date(AnalyseResult.created_at) == date.today(),
-                AnalyseResult.type_anomalie.isnot(None)
-            )
-        ).count(),
-        'pending_reviews': AnalyseResult.query.filter(
-            AnalyseResult.commentaire_medecin.is_(None)
-        ).count()
-    }
-    
-    # Données pour les graphiques (à implémenter selon vos besoins)
-    stats['daily_analyses_data'] = []
-    stats['anomaly_types_data'] = {}
-    
-    # Patients avec anomalies récentes
-    stats['top_anomaly_patients'] = []
-    
-    # Médecins les plus actifs
-    stats['top_doctors'] = []
-    
-    # Analyses récentes
-    stats['recent_analyses'] = AnalyseResult.query.order_by(
-        desc(AnalyseResult.created_at)
-    ).limit(10).all()
-    
+
+    stats = build_statistics_snapshot(period_days)
     return render_template('statistics_dashboard.html',
                          stats=stats,
                          title='Statistiques',
@@ -915,7 +1036,9 @@ def export_statistics_csv():
     except (ValueError, TypeError):
         period_days = 30
     
-    # Récupérer les données statistiques (même logique que statistics_dashboard)
+    stats = build_statistics_snapshot(period_days)
+    csv_data = export_service.export_statistics_csv(stats)
+    return export_service.create_csv_response(csv_data, f'statistiques_{period_days}j')
     stats_data = {
         'total_patients': Patient.query.count(),
         'total_analyses': AnalyseResult.query.count(),
@@ -1053,53 +1176,49 @@ def admin_users():
 @audit_action('CREATE', 'User')
 def admin_create_user():
     """Créer un nouvel utilisateur (admin)"""
-    from forms import RegisterForm
-    form = RegisterForm()
+    form = AdminUserForm()
     
     if form.validate_on_submit():
         try:
-            # Vérifier si l'email existe déjà
-            if User.query.filter_by(email=form.email.data).first():
-                flash('Cet email est déjà utilisé.', 'error')
+            try:
+                role = RoleEnum(form.role.data)
+            except ValueError:
+                flash('Rôle invalide.', 'danger')
                 return render_template('admin_create_user.html', form=form)
-            
-            # Hasher le mot de passe
-            hashed_password = generate_password_hash(form.password.data)
-            
-            # Créer l'utilisateur
+
             user = User(
-                nom=form.nom.data,
-                prenom=form.prenom.data,
-                email=form.email.data,
-                password=hashed_password,
-                role=RoleEnum(form.role.data),
+                nom=form.nom.data.strip(),
+                prenom=form.prenom.data.strip(),
+                username=form.username.data.strip(),
+                email=form.email.data.strip(),
+                role=role,
                 is_active=True,
-                created_at=datetime.now(timezone.utc),
-                last_login=None
+                date_creation=utcnow(),
+                derniere_connexion=None
             )
-            
+            user.password = generate_password_hash(form.password.data)
             db.session.add(user)
-            
-            # Si c'est un patient, créer le profil patient
-            if user.role == RoleEnum.patient:
+
+            if role == RoleEnum.PATIENT:
                 patient = Patient(
-                    user_id=user.id,
-                    numero_dossier=f"PAT{datetime.now().strftime('%Y%m%d')}{user.id}",
-                    date_naissance=form.date_naissance.data if hasattr(form, 'date_naissance') else None,
-                    telephone=form.telephone.data if hasattr(form, 'telephone') else None,
-                    adresse=form.adresse.data if hasattr(form, 'adresse') else None,
-                    created_at=datetime.now(timezone.utc)
+                    nom=form.nom.data.strip(),
+                    prenom=form.prenom.data.strip(),
+                    date_naissance=form.date_naissance.data,
+                    telephone=form.telephone.data,
+                    email=form.email.data.strip(),
+                    adresse=form.adresse.data,
+                    date_creation=utcnow()
                 )
                 db.session.add(patient)
-            
+                db.session.flush()
+                user.patient_id = patient.id
+
             db.session.commit()
-            
-            flash(f'Utilisateur {user.nom} {user.prenom} créé avec succès!', 'success')
+            flash(f'Utilisateur {user.full_name} créé avec succès!', 'success')
             return redirect(url_for('routes.admin_users'))
-            
         except Exception as e:
             db.session.rollback()
-            flash(f'Erreur lors de la création: {str(e)}', 'error')
+            flash(f'Erreur lors de la création: {str(e)}', 'danger')
     
     return render_template('admin_create_user.html', form=form)
 

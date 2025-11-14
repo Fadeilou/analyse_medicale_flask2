@@ -126,15 +126,16 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for user in users.items %}
+                    {% set role_value = user.role.value if user.role else '' %}
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
                                     <div class="h-10 w-10 rounded-full flex items-center justify-center
-                                        {% if user.role == RoleEnum.medecin %}bg-blue-100{% elif user.role == RoleEnum.administrateur %}bg-purple-100{% else %}bg-green-100{% endif %}">
-                                        {% if user.role == RoleEnum.medecin %}
+                                        {% if role_value == 'medecin' %}bg-blue-100{% elif role_value == 'administrateur' %}bg-purple-100{% else %}bg-green-100{% endif %}">
+                                        {% if role_value == 'medecin' %}
                                             <i class="fas fa-user-md text-blue-600"></i>
-                                        {% elif user.role == RoleEnum.administrateur %}
+                                        {% elif role_value == 'administrateur' %}
                                             <i class="fas fa-shield-alt text-purple-600"></i>
                                         {% else %}
                                             <i class="fas fa-user text-green-600"></i>
@@ -154,10 +155,10 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {% if user.role == RoleEnum.medecin %}bg-blue-100 text-blue-800
-                                {% elif user.role == RoleEnum.administrateur %}bg-purple-100 text-purple-800
+                                {% if role_value == 'medecin' %}bg-blue-100 text-blue-800
+                                {% elif role_value == 'administrateur' %}bg-purple-100 text-purple-800
                                 {% else %}bg-green-100 text-green-800{% endif %}">
-                                {{ user.role.value|title }}
+                                {{ role_value|title }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">

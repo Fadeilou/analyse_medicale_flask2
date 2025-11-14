@@ -16,10 +16,13 @@ class Config:
     # DATABASE_URL = os.environ.get('DATABASE_URL') or \
     #     'postgresql://postgres.ckxdpngmuuqdzdlsdiqb:iXBWWRCxGyWczCQLZkrbgkiTDqcmpVpecO@aws-0-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require'
     
-    DATABASE_URL = os.environ.get('DATABASE_URL') or \
-        'postgresql://blood_wki0_user:mER5oOdlXs5M1LlFq5zgryN1hrBMyPgQ@dpg-d48rolur433s73a8eh00-a.oregon-postgres.render.com/blood_wki0'
+    # DATABASE_URL = os.environ.get('DATABASE_URL') or \
+    #     'postgresql://blood_wki0_user:mER5oOdlXs5M1LlFq5zgryN1hrBMyPgQ@dpg-d48rolur433s73a8eh00-a.oregon-postgres.render.com/blood_wki0'
     
 
+    DATABASE_URL = os.environ.get('DATABASE_URL') or \
+        'postgresql://blood_2_user:pSMF7w6JAwhKJJVI6KxbNpQAGv6llyoZ@dpg-d4bbrvemcj7s73fd37s0-a.oregon-postgres.render.com/blood_2'
+    
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {

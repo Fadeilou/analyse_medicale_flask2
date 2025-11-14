@@ -16,24 +16,70 @@ class RoleEnum(enum.Enum):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.Enum(RoleEnum), nullable=False, default=RoleEnum.MEDECIN)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     last_login = db.Column(db.DateTime)
-    
+    date_modification = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    # Informations professionnelles
+    nom = db.Column(db.String(100))
+    prenom = db.Column(db.String(100))
+    specialite = db.Column(db.String(100))
+    numero_ordre = db.Column(db.String(50))
+    etablissement = db.Column(db.String(200))
+
+    # Sécurité avancée
+    two_factor_enabled = db.Column(db.Boolean, default=False)
+    two_factor_secret = db.Column(db.String(32))
+    backup_codes = db.Column(db.Text)
+    last_2fa_use = db.Column(db.DateTime)
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    account_locked_until = db.Column(db.DateTime)
+    password_reset_token = db.Column(db.String(100))
+    password_reset_expires = db.Column(db.DateTime)
+    email_verified = db.Column(db.Boolean, default=False)
+    email_verification_token = db.Column(db.String(100))
+
     # Pour les patients : lien vers leur fiche patient
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=True)
     patient_profile = db.relationship('Patient', backref=db.backref('user_account', uselist=False), uselist=False)
-    
-    # Pour les médecins : leurs analyses
-    analyses = db.relationship('AnalyseResult', backref='medecin', lazy=True)
+
+    # Pour les médecins : leurs analyses (liées via AnalyseResult.user_id)
+    analyses = db.relationship(
+        'AnalyseResult',
+        foreign_keys='AnalyseResult.user_id',
+        backref=db.backref('medecin', lazy=True),
+        lazy=True
+    )
 
     def __repr__(self):
         return f"User('{self.username}', role='{self.role.value}')"
     
+    @property
+    def full_name(self):
+        parts = [self.prenom, self.nom]
+        return " ".join([p for p in parts if p]) or self.username
+
+    @property
+    def date_creation(self):
+        return self.created_at
+
+    @date_creation.setter
+    def date_creation(self, value):
+        self.created_at = value
+
+    @property
+    def derniere_connexion(self):
+        return self.last_login
+
+    @derniere_connexion.setter
+    def derniere_connexion(self, value):
+        self.last_login = value
+
     def is_medecin(self):
         return self.role == RoleEnum.MEDECIN
     
@@ -57,11 +103,19 @@ class Patient(db.Model):
     telephone = db.Column(db.String(20))
     email = db.Column(db.String(120))
     adresse = db.Column(db.Text)
+    numero_securite_sociale = db.Column(db.String(20))
+    groupe_sanguin = db.Column(db.String(3))
     
     # Informations médicales
     antecedents_medicaux = db.Column(db.Text)
     allergies = db.Column(db.Text)
     medecin_traitant = db.Column(db.String(200))
+    data_encrypted = db.Column(db.Boolean, default=False)
+    consent_given = db.Column(db.Boolean, default=False)
+    consent_date = db.Column(db.DateTime)
+    data_retention_until = db.Column(db.DateTime)
+    anonymized = db.Column(db.Boolean, default=False)
+    anonymized_date = db.Column(db.DateTime)
     
     # Métadonnées
     created_at = db.Column(db.DateTime, default=utcnow)
@@ -73,6 +127,22 @@ class Patient(db.Model):
     def __repr__(self):
         return f"Patient('{self.nom} {self.prenom}')"
     
+    @property
+    def date_creation(self):
+        return self.created_at
+
+    @date_creation.setter
+    def date_creation(self, value):
+        self.created_at = value
+
+    @property
+    def date_modification(self):
+        return self.updated_at
+
+    @date_modification.setter
+    def date_modification(self, value):
+        self.updated_at = value
+
     @property
     def age(self):
         """Calcule l'âge du patient en années"""
@@ -89,16 +159,29 @@ class AnalyseResult(db.Model):
     test_positif = db.Column(db.Boolean, nullable=False)
     type_anomalie = db.Column(db.String(200), nullable=True)
     recommandation = db.Column(db.Text, nullable=True)
+    resultat_global = db.Column(db.Text, nullable=True)
+    confiance_score = db.Column(db.Float, nullable=True)
+    image_originale = db.Column(db.String(255), nullable=True)
+    image_resultat = db.Column(db.String(255), nullable=True)
+    resultats_json = db.Column(db.JSON, nullable=True)
+    cell_stats = db.Column(db.JSON, nullable=True)
+    legend = db.Column(db.JSON, nullable=True)
     
     # Commentaire médical ajouté par le médecin
     commentaire_medecin = db.Column(db.Text, nullable=True)
     
     # Statut de validation
     statut = db.Column(db.String(20), default='EN_ATTENTE') # EN_ATTENTE, VALIDE, REJETE
+    data_encrypted = db.Column(db.Boolean, default=False)
+    checksum = db.Column(db.String(64))
+    signed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    signature_date = db.Column(db.DateTime)
+    access_restricted = db.Column(db.Boolean, default=False)
     
     # Relations
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    signataire = db.relationship('User', foreign_keys=[signed_by])
     
     # Métadonnées
     image_filename = db.Column(db.String(200))
@@ -107,6 +190,26 @@ class AnalyseResult(db.Model):
 
     def __repr__(self):
         return f"AnalyseResult(date_analyse='{self.date_analyse}', test_positif={self.test_positif})"
+
+    @property
+    def anomalies_detectees(self):
+        return bool(self.test_positif or (self.type_anomalie and self.type_anomalie.strip()))
+
+    @property
+    def date_creation(self):
+        return self.created_at
+
+    @date_creation.setter
+    def date_creation(self, value):
+        self.created_at = value
+
+    @property
+    def date_modification(self):
+        return self.updated_at
+
+    @date_modification.setter
+    def date_modification(self, value):
+        self.updated_at = value
 
 class AuditLog(db.Model):
     """Table pour l'audit trail - historique des actions"""
