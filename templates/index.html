@@ -307,42 +307,45 @@
                                 {% endif %}
                             </div>
                             
-                            {% if patient_info %}
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                <div class="flex items-center">
-                                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
-                                    <div class="text-sm text-blue-800">
-                                        <strong>Patient sélectionné :</strong> Cette analyse sera automatiquement associée au patient {{ patient_info.prenom }} {{ patient_info.nom }}.
+                            <div id="selected-patient-banner" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex-col sm:flex-row sm:items-center sm:justify-between {% if not patient_info %}hidden{% endif %}">
+                                <div class="flex items-center text-sm text-blue-800">
+                                    <i class="fas fa-user-check text-blue-600 mr-2"></i>
+                                    <div>
+                                        <strong>Patient sélectionné :</strong>
+                                        <span id="selected-patient-name">{% if patient_info %}{{ patient_info.prenom }} {{ patient_info.nom }}{% endif %}</span>
                                     </div>
                                 </div>
+                                <button type="button" id="reset-patient-selection" class="mt-3 sm:mt-0 inline-flex items-center px-3 py-2 text-xs font-medium text-blue-700 border border-blue-300 rounded hover:bg-blue-100">
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    Changer de patient
+                                </button>
                             </div>
-                            {% endif %}
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
+                                <div class="relative">
                                     <label for="patient_nom" class="form-label">Nom du patient *</label>
                                     <input type="text" id="patient_nom" name="patient_nom" class="form-input" placeholder="Nom de famille" 
                                            value="{{ patient_info.nom if patient_info else '' }}" 
-                                           {% if patient_info %}readonly{% endif %} required>
+                                           {% if patient_info %}readonly{% endif %} required autocomplete="off">
+                                    <div id="patient-suggestions" class="absolute z-20 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 hidden"></div>
+                                    <p class="text-xs text-gray-500 mt-1">Tapez au moins 2 lettres pour rechercher un patient existant.</p>
                                 </div>
                                 <div>
                                     <label for="patient_prenom" class="form-label">Prénom</label>
                                     <input type="text" id="patient_prenom" name="patient_prenom" class="form-input" placeholder="Prénom(s)"
                                            value="{{ patient_info.prenom if patient_info else '' }}"
-                                           {% if patient_info %}readonly{% endif %}>
+                                           {% if patient_info %}readonly{% endif %} required>
                                 </div>
                                 <div class="md:col-span-2">
                                     <label for="patient_date_naissance" class="form-label">Date de naissance</label>
                                     <input type="date" id="patient_date_naissance" name="patient_date_naissance" class="form-input"
                                            value="{{ patient_info.date_naissance if patient_info else '' }}"
-                                           {% if patient_info %}readonly{% endif %}>
+                                           {% if patient_info %}readonly{% endif %} required>
                                 </div>
                             </div>
 
                             <!-- Champs cachés -->
-                            {% if patient_info %}
-                            <input type="hidden" name="existing_patient_id" value="{{ patient_info.id }}">
-                            {% endif %}
+                            <input type="hidden" name="existing_patient_id" id="existing_patient_id_input" value="{{ patient_info.id if patient_info else '' }}">
                             <input type="hidden" name="output_image_filename" value="{{ image_filename }}">
                             <input type="hidden" name="status" value="{{ resultat_analyse.status }}">
                             <input type="hidden" name="diseases" value="{{ resultat_analyse.diseases | join(',') }}">
@@ -384,6 +387,16 @@
             const changeImageBtn = document.getElementById('change-image');
             const newAnalysisBtn = document.getElementById('new-analysis');
             const cancelSaveBtn = document.getElementById('cancel-save');
+            const patientNomInput = document.getElementById('patient_nom');
+            const patientPrenomInput = document.getElementById('patient_prenom');
+            const patientBirthInput = document.getElementById('patient_date_naissance');
+            const patientSuggestionsBox = document.getElementById('patient-suggestions');
+            const existingPatientInput = document.getElementById('existing_patient_id_input');
+            const selectedPatientBanner = document.getElementById('selected-patient-banner');
+            const selectedPatientName = document.getElementById('selected-patient-name');
+            const resetPatientBtn = document.getElementById('reset-patient-selection');
+            let patientSearchTimeout = null;
+            let patientFetchController = null;
 
             // Gestion du glisser-déposer
             if (dropZone) {
@@ -501,6 +514,134 @@
             if (resultsSection) {
                 uploadSection.classList.add('hidden');
                 previewSection.classList.add('hidden');
+            }
+
+            // --- Auto-complétion patient ---
+            function togglePatientFields(readonly) {
+                [patientNomInput, patientPrenomInput, patientBirthInput].forEach(input => {
+                    if (!input) return;
+                    input.readOnly = readonly;
+                    input.classList.toggle('bg-gray-100', readonly);
+                });
+            }
+
+            function showSelectedPatient(name) {
+                if (!selectedPatientBanner) return;
+                selectedPatientBanner.classList.remove('hidden');
+                if (selectedPatientName) {
+                    selectedPatientName.textContent = name;
+                }
+            }
+
+            function hideSelectedPatient() {
+                if (!selectedPatientBanner) return;
+                selectedPatientBanner.classList.add('hidden');
+                if (selectedPatientName) {
+                    selectedPatientName.textContent = '';
+                }
+            }
+
+            function clearSuggestions() {
+                if (!patientSuggestionsBox) return;
+                patientSuggestionsBox.innerHTML = '';
+                patientSuggestionsBox.classList.add('hidden');
+            }
+
+            function renderPatientSuggestions(patients) {
+                if (!patientSuggestionsBox) return;
+                patientSuggestionsBox.innerHTML = '';
+                if (!patients.length) {
+                    patientSuggestionsBox.classList.add('hidden');
+                    return;
+                }
+                const list = document.createElement('ul');
+                list.className = 'divide-y divide-gray-100 max-h-60 overflow-y-auto';
+                patients.forEach(patient => {
+                    const item = document.createElement('li');
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'w-full text-left px-3 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none';
+                    const fullName = `${patient.prenom || ''} ${patient.nom || ''}`.trim();
+                    button.innerHTML = `<div class="font-semibold text-gray-800">${fullName}</div>
+                        <div class="text-xs text-gray-500">${patient.date_naissance ? 'Né(e) le ' + new Date(patient.date_naissance).toLocaleDateString() : 'Date inconnue'}</div>`;
+                    button.addEventListener('click', () => {
+                        existingPatientInput.value = patient.id;
+                        patientNomInput.value = patient.nom || '';
+                        patientPrenomInput.value = patient.prenom || '';
+                        patientBirthInput.value = patient.date_naissance || '';
+                        togglePatientFields(true);
+                        showSelectedPatient(fullName);
+                        clearSuggestions();
+                    });
+                    item.appendChild(button);
+                    list.appendChild(item);
+                });
+                patientSuggestionsBox.appendChild(list);
+                patientSuggestionsBox.classList.remove('hidden');
+            }
+
+            function searchPatients(term) {
+                if (!patientSuggestionsBox) return;
+                if (patientFetchController) {
+                    patientFetchController.abort();
+                }
+                patientFetchController = new AbortController();
+                fetch(`/api/patients/search?q=${encodeURIComponent(term)}`, { signal: patientFetchController.signal })
+                    .then(response => response.json())
+                    .then(data => renderPatientSuggestions(data))
+                    .catch(() => {});
+            }
+
+            if (patientNomInput) {
+                patientNomInput.addEventListener('input', function(e) {
+                    if (existingPatientInput && existingPatientInput.value) {
+                        return; // verrouillé
+                    }
+                    const term = e.target.value.trim();
+                    if (term.length < 2) {
+                        clearSuggestions();
+                        return;
+                    }
+                    if (patientSearchTimeout) {
+                        clearTimeout(patientSearchTimeout);
+                    }
+                    patientSearchTimeout = setTimeout(() => {
+                        searchPatients(term);
+                    }, 250);
+                });
+
+                patientNomInput.addEventListener('focus', function() {
+                    if (patientNomInput.value.trim().length >= 2 && !(existingPatientInput && existingPatientInput.value)) {
+                        searchPatients(patientNomInput.value.trim());
+                    }
+                });
+            }
+
+            document.addEventListener('click', function(event) {
+                if (!patientSuggestionsBox || patientSuggestionsBox.classList.contains('hidden')) {
+                    return;
+                }
+                if (!patientSuggestionsBox.contains(event.target) && event.target !== patientNomInput) {
+                    clearSuggestions();
+                }
+            });
+
+            if (resetPatientBtn) {
+                resetPatientBtn.addEventListener('click', function() {
+                    if (existingPatientInput) {
+                        existingPatientInput.value = '';
+                    }
+                    togglePatientFields(false);
+                    hideSelectedPatient();
+                    clearSuggestions();
+                    if (patientNomInput) {
+                        patientNomInput.focus();
+                    }
+                });
+            }
+
+            if (existingPatientInput && existingPatientInput.value) {
+                togglePatientFields(true);
             }
         });
     </script>

@@ -53,11 +53,11 @@
                     <h2 class="text-lg font-semibold text-gray-900">Résultats de l'IA</h2>
                 </div>
                 <div class="p-6">
-                    {% if analyse.anomalies_detectees %}
+                    {% if analyse.type_anomalie %}
                         <div class="mb-4">
                             <label class="block text-gray-500 font-medium mb-2">Anomalies détectées:</label>
                             <div class="flex flex-wrap gap-2">
-                                {% for anomalie in analyse.anomalies_detectees.split(',') %}
+                                {% for anomalie in analyse.type_anomalie.split(',') %}
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
                                     {{ anomalie.strip() }}
                                 </span>

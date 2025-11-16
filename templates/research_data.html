@@ -85,6 +85,42 @@
         </div>
     </div>
 
+    <!-- Résumé dataset -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-green-400">
+            <p class="text-sm text-gray-500">Prêtes pour l'entraînement</p>
+            <p class="text-3xl font-bold text-gray-900">{{ dataset_summary.ready_for_training }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-yellow-300">
+            <p class="text-sm text-gray-500">En attente</p>
+            <p class="text-3xl font-bold text-gray-900">{{ dataset_summary.pending_validation }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-red-400">
+            <p class="text-sm text-gray-500">À revoir</p>
+            <p class="text-3xl font-bold text-gray-900">{{ dataset_summary.needs_review }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-blue-400">
+            <p class="text-sm text-gray-500">Images avec masques</p>
+            <p class="text-3xl font-bold text-gray-900">{{ dataset_summary.with_masks }}</p>
+        </div>
+    </div>
+
+    {% if label_distribution %}
+    <div class="bg-white rounded-lg shadow-md mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gray-800">Répartition par pathologie</h2>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for label, count in label_distribution.items() %}
+            <div class="flex items-center justify-between p-3 border rounded-lg">
+                <span class="font-medium text-gray-700">{{ label }}</span>
+                <span class="text-sm text-gray-500">{{ count }} analyses</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Filtres -->
     <div class="bg-white rounded-lg shadow-md mb-6">
         <div class="px-6 py-4 border-b border-gray-200">
@@ -93,30 +129,37 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Type d'anomalie</label>
                     <select name="anomaly_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Tous les types</option>
-                        <option value="DREPANOCYTES" {{ 'selected' if request.args.get('anomaly_type') == 'DREPANOCYTES' }}>Drépanocytes</option>
-                        <option value="ELLIPTOCYTES" {{ 'selected' if request.args.get('anomaly_type') == 'ELLIPTOCYTES' }}>Elliptocytes</option>
-                        <option value="SCHIZOCYTES" {{ 'selected' if request.args.get('anomaly_type') == 'SCHIZOCYTES' }}>Schizocytes</option>
-                        <option value="SAINS" {{ 'selected' if request.args.get('anomaly_type') == 'SAINS' }}>Cellules saines</option>
+                        <option value="DREPANOCYTES" {{ 'selected' if filters.anomaly_type == 'DREPANOCYTES' }}>Drépanocytes</option>
+                        <option value="ELLIPTOCYTES" {{ 'selected' if filters.anomaly_type == 'ELLIPTOCYTES' }}>Elliptocytes</option>
+                        <option value="SCHIZOCYTES" {{ 'selected' if filters.anomaly_type == 'SCHIZOCYTES' }}>Schizocytes</option>
+                        <option value="SAINS" {{ 'selected' if filters.anomaly_type == 'SAINS' }}>Cellules saines</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Statut annotation</label>
                     <select name="annotation_status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Tous les statuts</option>
-                        <option value="annotated" {{ 'selected' if request.args.get('annotation_status') == 'annotated' }}>Annotées</option>
-                        <option value="unannotated" {{ 'selected' if request.args.get('annotation_status') == 'unannotated' }}>Non annotées</option>
-                        <option value="under_review" {{ 'selected' if request.args.get('annotation_status') == 'under_review' }}>En révision</option>
-                        <option value="validated" {{ 'selected' if request.args.get('annotation_status') == 'validated' }}>Validées</option>
+                        <option value="annotated" {{ 'selected' if filters.annotation_status == 'annotated' }}>Annotées</option>
+                        <option value="unannotated" {{ 'selected' if filters.annotation_status == 'unannotated' }}>Non annotées</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Validation</label>
+                    <select name="validation_status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous statuts</option>
+                        <option value="PENDING" {{ 'selected' if filters.validation_status == 'PENDING' }}>En attente</option>
+                        <option value="CONFIRMED" {{ 'selected' if filters.validation_status == 'CONFIRMED' }}>Validées</option>
+                        <option value="REJECTED" {{ 'selected' if filters.validation_status == 'REJECTED' }}>Rejetées</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Période</label>
                     <select name="period" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Toute période</option>
-                        <option value="today" {{ 'selected' if request.args.get('period') == 'today' }}>Aujourd'hui</option>
-                        <option value="week" {{ 'selected' if request.args.get('period') == 'week' }}>7 derniers jours</option>
-                        <option value="month" {{ 'selected' if request.args.get('period') == 'month' }}>30 derniers jours</option>
-                        <option value="quarter" {{ 'selected' if request.args.get('period') == 'quarter' }}>3 derniers mois</option>
+                        <option value="today" {{ 'selected' if filters.period == 'today' }}>Aujourd'hui</option>
+                        <option value="week" {{ 'selected' if filters.period == 'week' }}>7 derniers jours</option>
+                        <option value="month" {{ 'selected' if filters.period == 'month' }}>30 derniers jours</option>
+                        <option value="quarter" {{ 'selected' if filters.period == 'quarter' }}>3 derniers mois</option>
                     </select>
                 </div>
                 <div class="flex items-end">
@@ -219,9 +262,9 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            {% if analyse.anomalies_detectees %}
+                            {% if analyse.type_anomalie %}
                                 <div class="flex flex-wrap gap-1">
-                                    {% for anomalie in analyse.anomalies_detectees.split(',') %}
+                                    {% for anomalie in analyse.type_anomalie.split(',') %}
                                     <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
                                         {{ anomalie.strip() }}
                                     </span>
@@ -279,6 +322,21 @@
                                     <i class="fas fa-clock mr-1"></i>En attente
                                 </span>
                             {% endif %}
+                            <div class="mt-2">
+                                {% if analyse.validation_status == 'CONFIRMED' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                        <i class="fas fa-user-check mr-1"></i>Validée médecin
+                                    </span>
+                                {% elif analyse.validation_status == 'REJECTED' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
+                                        <i class="fas fa-times-circle mr-1"></i>Rejetée
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700">
+                                        <i class="fas fa-hourglass-half mr-1"></i>En attente médecin
+                                    </span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <div class="flex items-center justify-center space-x-2">
@@ -345,7 +403,7 @@
             <i class="fas fa-flask text-gray-300 text-6xl mb-4"></i>
             <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune donnée de recherche</h3>
             <p class="text-gray-500">
-                {% if request.args.get('anomaly_type') or request.args.get('annotation_status') %}
+                {% if filters.anomaly_type or filters.annotation_status or filters.validation_status %}
                     Aucune analyse ne correspond à vos critères de filtrage.
                 {% else %}
                     Aucune analyse disponible pour la recherche.
@@ -434,6 +492,10 @@ function exportResearchData() {
     
     showToast('Export en cours...', 'info');
     window.location.href = exportUrl;
+}
+
+function showBulkAnnotation() {
+    bulkAnnotate();
 }
 
 // Télécharger les données d'une analyse

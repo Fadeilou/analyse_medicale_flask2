@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 import os
 import uuid # Pour générer des noms de fichiers uniques
 from werkzeug.utils import secure_filename
-from models import db, User, Patient, AnalyseResult, RoleEnum, Notification, AuditLog, Annotation
+from models import db, User, Patient, AnalyseResult, RoleEnum, Notification, AuditLog, Annotation, AnalyseReviewRequest, AnalyseReview
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import date, datetime, timedelta, timezone
@@ -208,8 +208,18 @@ def analyse_detail_page(analyse_id):
     if analyse.user_id != current_user.id:
         flash("Accès non autorisé.", 'danger')
         return redirect(url_for('routes.analyses_list'))
-    # Le template 'analyse_detail.html' devra utiliser analyse.image_path pour l'image
-    return render_template('analyse_detail.html', analyse=analyse, title=f"Détail Analyse #{analyse.id}")
+    doctors = User.query.filter(
+        User.role == RoleEnum.MEDECIN,
+        User.id != current_user.id
+    ).order_by(User.nom.asc()).all()
+    review_requests = AnalyseReviewRequest.query.filter_by(analyse_id=analyse.id).order_by(AnalyseReviewRequest.created_at.desc()).all()
+    can_validate = current_user.role == RoleEnum.MEDECIN and analyse.user_id == current_user.id
+    return render_template('analyse_detail.html',
+                           analyse=analyse,
+                           doctors=doctors,
+                           review_requests=review_requests,
+                           can_validate=can_validate,
+                           title=f"Détail Analyse #{analyse.id}")
 
 # --- Route Page d'Analyse (RESTREINTE AUX MÉDECINS) ---
 @routes.route('/analyse', methods=['GET', 'POST'])
@@ -516,6 +526,9 @@ def save_analysis():
                     return redirect(url_for('routes.analyse'))
                 patient_id = patient.id
             else:
+                if not patient_nom or not patient_prenom or not patient_date_naissance_str:
+                    flash('Veuillez renseigner le nom, le prénom et la date de naissance pour créer un nouveau patient.', 'danger')
+                    return redirect(url_for('routes.analyse'))
                 # Créer un nouveau patient
                 patient = Patient(nom=patient_nom, prenom=patient_prenom, date_naissance=patient_date_naissance)
                 db.session.add(patient)
@@ -694,6 +707,34 @@ def patients_list():
                          title='Gestion des Patients',
                          dashboard_content=True)
 
+@routes.route('/api/patients/search')
+@login_required
+@medecin_required
+def api_patients_search():
+    """Recherche rapide de patients pour l'auto-complétion"""
+    query = request.args.get('q', '').strip()
+    if len(query) < 2:
+        return jsonify([])
+
+    like_pattern = f"%{query.lower()}%"
+    patients = Patient.query.filter(
+        or_(
+            func.lower(Patient.nom).like(like_pattern),
+            func.lower(Patient.prenom).like(like_pattern)
+        )
+    ).order_by(Patient.nom.asc()).limit(10).all()
+
+    results = []
+    for patient in patients:
+        results.append({
+            'id': patient.id,
+            'nom': patient.nom,
+            'prenom': patient.prenom,
+            'date_naissance': patient.date_naissance.isoformat() if patient.date_naissance else None
+        })
+
+    return jsonify(results)
+
 @routes.route('/patients/<int:patient_id>')
 @login_required
 @medecin_required
@@ -845,7 +886,7 @@ def add_medical_comment(analyse_id):
     if not commentaire:
         flash('Le commentaire ne peut pas être vide', 'danger')
         return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
-    
+
     try:
         analyse.commentaire_medecin = commentaire
         analyse.commentaire_visible_patient = visible_patient
@@ -870,6 +911,108 @@ def add_medical_comment(analyse_id):
         flash(f'Erreur lors de l\'ajout du commentaire: {e}', 'danger')
     
     return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
+
+@routes.route('/analyses/<int:analyse_id>/validate', methods=['POST'])
+@login_required
+@medecin_required
+@audit_action('VALIDATE', 'Analysis')
+def validate_analysis(analyse_id):
+    analyse = AnalyseResult.query.get_or_404(analyse_id)
+    if analyse.user_id != current_user.id and not current_user.is_admin():
+        flash('Vous ne pouvez valider que vos propres analyses.', 'danger')
+        return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
+    new_status = request.form.get('validation_status')
+    comment = request.form.get('validation_comment', '').strip()
+    if new_status not in ['CONFIRMED', 'REJECTED']:
+        flash('Statut de validation invalide.', 'danger')
+        return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
+    analyse.validation_status = new_status
+    analyse.validation_comment = comment
+    analyse.validation_date = utcnow()
+    analyse.validation_user_id = current_user.id
+    analyse.date_modification = utcnow()
+    analyse.statut = 'VALIDE' if new_status == 'CONFIRMED' else 'REJETE'
+
+    try:
+        db.session.commit()
+        flash('Validation enregistrée.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de la validation: {e}', 'danger')
+
+    return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
+
+@routes.route('/analyses/<int:analyse_id>/request_review', methods=['POST'])
+@login_required
+@medecin_required
+@audit_action('REQUEST_REVIEW', 'Analysis')
+def request_analysis_review(analyse_id):
+    analyse = AnalyseResult.query.get_or_404(analyse_id)
+    doctor_ids = request.form.getlist('doctor_ids')
+    message = request.form.get('review_message', '').strip()
+
+    if not doctor_ids:
+        flash('Sélectionnez au moins un médecin.', 'danger')
+        return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
+    try:
+        review_request = AnalyseReviewRequest(
+            analyse_id=analyse.id,
+            requester_id=current_user.id,
+            message=message
+        )
+        db.session.add(review_request)
+        db.session.flush()
+
+        for doctor_id in doctor_ids:
+            if doctor_id == str(current_user.id):
+                continue
+            review = AnalyseReview(
+                request_id=review_request.id,
+                reviewer_id=int(doctor_id),
+                status='PENDING'
+            )
+            db.session.add(review)
+        db.session.commit()
+        flash('Demande envoyée aux médecins sélectionnés.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de l\'envoi de la demande: {e}', 'danger')
+
+    return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
+
+@routes.route('/analyses/reviews/<int:review_id>/respond', methods=['POST'])
+@login_required
+@medecin_required
+@audit_action('RESPOND_REVIEW', 'Analysis')
+def respond_analysis_review(review_id):
+    review = AnalyseReview.query.get_or_404(review_id)
+    if review.reviewer_id != current_user.id:
+        flash('Vous ne pouvez répondre qu\'aux demandes qui vous sont adressées.', 'danger')
+        return redirect(url_for('routes.analyse_detail_page', analyse_id=review.request.analyse_id))
+
+    status = request.form.get('review_status')
+    comment = request.form.get('review_comment', '').strip()
+    if status not in ['APPROVED', 'REJECTED']:
+        flash('Statut de réponse invalide.', 'danger')
+        return redirect(url_for('routes.analyse_detail_page', analyse_id=review.request.analyse_id))
+
+    try:
+        review.status = status
+        review.comment = comment
+        review.updated_at = utcnow()
+        db.session.commit()
+        flash('Avis enregistré.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de la réponse: {e}', 'danger')
+
+    return redirect(url_for('routes.analyse_detail_page', analyse_id=review.request.analyse_id))
 
 # ============================================================================
 # TÉLÉCHARGEMENTS PDF
@@ -1342,6 +1485,7 @@ def research_data():
     anomaly_type = request.args.get('anomaly_type', '', type=str)
     annotation_status = request.args.get('annotation_status', '', type=str)
     period = request.args.get('period', '', type=str)
+    validation_status = request.args.get('validation_status', '', type=str)
     
     query = AnalyseResult.query
     
@@ -1355,6 +1499,9 @@ def research_data():
         query = query.filter(AnalyseResult.annotations.any())
     elif annotation_status == 'unannotated':
         query = query.filter(~AnalyseResult.annotations.any())
+
+    if validation_status in ['PENDING', 'CONFIRMED', 'REJECTED']:
+        query = query.filter(AnalyseResult.validation_status == validation_status)
     
     if period:
         date_limit = datetime.now()
@@ -1375,20 +1522,38 @@ def research_data():
     # Statistiques
     stats = {
         'total_analyses': AnalyseResult.query.count(),
-        'annotated_analyses': AnalyseResult.query.filter(
-            AnalyseResult.annotations.any()
-        ).count(),
-        'under_review': AnalyseResult.query.join(Annotation).filter(
-            Annotation.statut == 'under_review'
-        ).count(),
-        'validated_analyses': AnalyseResult.query.join(Annotation).filter(
-            Annotation.statut == 'validated'
-        ).count()
+        'annotated_analyses': AnalyseResult.query.filter(AnalyseResult.annotations.any()).count(),
+        'under_review': AnalyseResult.query.join(Annotation, isouter=True).filter(Annotation.statut == 'pending').count(),
+        'validated_analyses': AnalyseResult.query.join(Annotation, isouter=True).filter(Annotation.statut == 'validated').count()
     }
-    
+
+    dataset_summary = {
+        'ready_for_training': AnalyseResult.query.filter(AnalyseResult.validation_status == 'CONFIRMED').count(),
+        'pending_validation': AnalyseResult.query.filter(AnalyseResult.validation_status == 'PENDING').count(),
+        'needs_review': AnalyseResult.query.filter(AnalyseResult.validation_status == 'REJECTED').count(),
+        'with_masks': AnalyseResult.query.filter(AnalyseResult.legend.isnot(None)).count()
+    }
+
+    label_distribution = {}
+    for type_str in db.session.query(AnalyseResult.type_anomalie).filter(AnalyseResult.type_anomalie.isnot(None)):
+        if not type_str[0]:
+            continue
+        for label in [p.strip() for p in type_str[0].split(',') if p.strip()]:
+            label_distribution[label] = label_distribution.get(label, 0) + 1
+
+    filters = {
+        'anomaly_type': anomaly_type,
+        'annotation_status': annotation_status,
+        'period': period,
+        'validation_status': validation_status
+    }
+
     return render_template('research_data.html',
                          analyses=analyses,
                          stats=stats,
+                         dataset_summary=dataset_summary,
+                         label_distribution=label_distribution,
+                         filters=filters,
                          title='Données de Recherche',
                          dashboard_content=True)
 
@@ -1428,7 +1593,7 @@ def annotate_analysis(analyse_id):
                 # Créer une nouvelle annotation
                 annotation = Annotation(
                     analyse_id=analyse_id,
-                    annotateur_id=current_user.id,
+                    user_id=current_user.id,
                     type=form.annotation_type.data,
                     annotation=form.annotation.data,
                     tags=form.tags.data,
@@ -1451,6 +1616,115 @@ def annotate_analysis(analyse_id):
                          form=form,
                          title='Annotation pour la Recherche',
                          dashboard_content=True)
+
+@routes.route('/research/bulk-annotate', methods=['GET', 'POST'])
+@login_required
+@require_role([RoleEnum.MEDECIN, RoleEnum.ADMINISTRATEUR])
+@audit_action('BULK_ANNOTATE', 'Analysis')
+def research_bulk_annotate():
+    form = BulkAnnotationForm()
+    if request.method == 'GET':
+        ids = request.args.getlist('analysis_ids')
+        form.analysis_ids.data = ','.join(ids)
+        if not ids:
+            flash('Sélectionnez au moins une analyse depuis la liste de recherche.', 'warning')
+            return redirect(url_for('routes.research_data'))
+    if form.validate_on_submit():
+        ids = [int(i) for i in form.analysis_ids.data.split(',') if i.strip()]
+        if not ids:
+            flash('Aucune analyse sélectionnée.', 'danger')
+            return redirect(url_for('routes.research_data'))
+        analyses = AnalyseResult.query.filter(AnalyseResult.id.in_(ids)).all()
+        applied = 0
+        for analyse in analyses:
+            annotation = Annotation.query.filter_by(analyse_id=analyse.id, type='RESEARCH').first()
+            if not annotation:
+                annotation = Annotation(
+                    analyse_id=analyse.id,
+                    user_id=current_user.id,
+                    type=form.annotation_type.data
+                )
+                db.session.add(annotation)
+            annotation.annotation = form.annotation_template.data
+            annotation.tags = form.tags.data
+            annotation.statut = form.statut.data
+            annotation.date_modification = utcnow()
+            applied += 1
+        try:
+            db.session.commit()
+            flash(f'Annotations appliquées à {applied} analyses.', 'success')
+            return redirect(url_for('routes.research_data'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de l\'annotation en lot: {e}', 'danger')
+    return render_template('bulk_annotate.html', form=form, title='Annotation en lot', dashboard_content=True)
+
+@routes.route('/research/analysis/<int:analyse_id>/download')
+@login_required
+@require_role([RoleEnum.MEDECIN, RoleEnum.ADMINISTRATEUR])
+def download_analysis_dataset(analyse_id):
+    analyse = AnalyseResult.query.get_or_404(analyse_id)
+    payload = {
+        'analysis': {
+            'id': analyse.id,
+            'status': analyse.validation_status,
+            'result': analyse.resultat_global,
+            'recommandation': analyse.recommandation,
+            'cell_stats': analyse.cell_stats,
+            'legend': analyse.legend,
+            'created_at': analyse.created_at.isoformat() if analyse.created_at else None
+        },
+        'patient': {
+            'id': analyse.patient.id,
+            'nom': analyse.patient.nom,
+            'prenom': analyse.patient.prenom,
+            'date_naissance': analyse.patient.date_naissance.isoformat() if analyse.patient.date_naissance else None
+        },
+        'annotations': [
+            {
+                'id': annotation.id,
+                'type': annotation.type,
+                'statut': annotation.statut,
+                'commentaire': annotation.annotation,
+                'tags': annotation.tags
+            }
+            for annotation in analyse.annotations
+        ]
+    }
+    return export_service.create_json_response(json.dumps(payload, ensure_ascii=False), f'analyse_{analyse.id}')
+
+@routes.route('/research/export-selected')
+@login_required
+@require_role([RoleEnum.MEDECIN, RoleEnum.ADMINISTRATEUR])
+def export_selected_analyses():
+    ids = request.args.getlist('analysis_ids')
+    if not ids:
+        flash('Aucune analyse sélectionnée pour l\'export.', 'warning')
+        return redirect(url_for('routes.research_data'))
+    analyses = AnalyseResult.query.filter(AnalyseResult.id.in_(ids)).all()
+    csv_data = export_service.export_analyses_csv(analyses)
+    return export_service.create_csv_response(csv_data, 'research_selection')
+
+@routes.route('/research/bulk-validate', methods=['POST'])
+@login_required
+@require_role([RoleEnum.MEDECIN, RoleEnum.ADMINISTRATEUR])
+def bulk_validate_analyses():
+    payload = request.get_json() or {}
+    ids = payload.get('analysis_ids', [])
+    if not ids:
+        return jsonify({'success': False, 'message': 'Aucune analyse fournie'}), 400
+    try:
+        analyses = AnalyseResult.query.filter(AnalyseResult.id.in_(ids)).all()
+        for analyse in analyses:
+            analyse.validation_status = 'CONFIRMED'
+            analyse.validation_user_id = current_user.id
+            analyse.validation_date = utcnow()
+            analyse.statut = 'VALIDE'
+        db.session.commit()
+        return jsonify({'success': True, 'count': len(analyses)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @routes.route('/research/export')
 @login_required

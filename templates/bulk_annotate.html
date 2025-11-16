@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Annotation en Lot{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Annotation en lot</h1>
+            <p class="text-gray-500 text-sm">Appliquer la même annotation à plusieurs analyses sélectionnées.</p>
+        </div>
+        <a href="{{ url_for('routes.research_data') }}" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Retour à la recherche
+        </a>
+    </div>
+
+    <div class="card">
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <input type="hidden" name="analysis_ids" value="{{ form.analysis_ids.data }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    {{ form.annotation_type.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                    {{ form.annotation_type(class="form-input") }}
+                </div>
+                <div>
+                    {{ form.statut.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                    {{ form.statut(class="form-input") }}
+                </div>
+            </div>
+            <div class="mt-6">
+                {{ form.annotation_template.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                {{ form.annotation_template(class="form-input", rows=5) }}
+            </div>
+            <div class="mt-6">
+                {{ form.tags.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                {{ form.tags(class="form-input") }}
+                <p class="text-xs text-gray-500 mt-1">Séparez les tags par des virgules.</p>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save mr-2"></i>
+                    Appliquer aux analyses sélectionnées
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -92,6 +92,166 @@
                     </div>
                 </div>
 
+                <!-- Validation médicale -->
+                <div class="card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-user-md text-green-500 mr-3"></i>
+                                Validation médicale
+                            </h3>
+                            <p class="text-sm text-gray-500">Confirmation humaine du diagnostic IA</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold
+                            {% if analyse.validation_status == 'CONFIRMED' %}bg-green-100 text-green-700
+                            {% elif analyse.validation_status == 'REJECTED' %}bg-red-100 text-red-700
+                            {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {% if analyse.validation_status == 'CONFIRMED' %}Analyse validée
+                            {% elif analyse.validation_status == 'REJECTED' %}Analyse rejetée
+                            {% else %}En attente de validation{% endif %}
+                        </span>
+                    </div>
+
+                    {% if analyse.validation_comment %}
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-gray-500 mb-1">Commentaire du médecin</p>
+                        <p class="text-gray-800">{{ analyse.validation_comment }}</p>
+                        {% if analyse.validator %}
+                        <p class="text-xs text-gray-500 mt-2">Par {{ analyse.validator.full_name }} le {{ analyse.validation_date.strftime('%d/%m/%Y %H:%M') if analyse.validation_date else '' }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if can_validate %}
+                    <form method="post" action="{{ url_for('routes.validate_analysis', analyse_id=analyse.id) }}" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:border-green-400">
+                                <input type="radio" name="validation_status" value="CONFIRMED" class="text-green-600" {% if analyse.validation_status != 'REJECTED' %}checked{% endif %}>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Analyse correcte</p>
+                                    <p class="text-xs text-gray-500">L'IA a correctement identifié les anomalies.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:border-red-400">
+                                <input type="radio" name="validation_status" value="REJECTED" class="text-red-600" {% if analyse.validation_status == 'REJECTED' %}checked{% endif %}>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Analyse incorrecte</p>
+                                    <p class="text-xs text-gray-500">Corriger ou expliquer l'erreur détectée.</p>
+                                </div>
+                            </label>
+                        </div>
+                        <div>
+                            <label for="validation_comment" class="text-sm font-medium text-gray-700">Commentaire</label>
+                            <textarea id="validation_comment" name="validation_comment" rows="3" class="form-input mt-1"
+                                placeholder="Expliquez votre décision (obligatoire si rejet)">{{ analyse.validation_comment or '' }}</textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn-success">
+                                <i class="fas fa-check mr-2"></i>
+                                Enregistrer la validation
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="text-sm text-gray-500">Seul le médecin ayant réalisé l'analyse peut la valider.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Demande d'avis -->
+                <div class="card">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-users text-purple-500 mr-3"></i>
+                            Demander un avis
+                        </h3>
+                        <p class="text-sm text-gray-500">Sélectionnez un ou plusieurs médecins pour obtenir un second avis.</p>
+                    </div>
+                    {% if doctors %}
+                    <form method="post" action="{{ url_for('routes.request_analysis_review', analyse_id=analyse.id) }}" class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Médecins à consulter</label>
+                            <select name="doctor_ids" multiple required class="form-input mt-1 h-32">
+                                {% for doctor in doctors %}
+                                <option value="{{ doctor.id }}">{{ doctor.full_name }} ({{ doctor.email or 'n/a' }})</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Maintenez CTRL (ou CMD) pour sélectionner plusieurs médecins.</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700" for="review_message">Message (optionnel)</label>
+                            <textarea id="review_message" name="review_message" rows="3" class="form-input mt-1" placeholder="Précisez le contexte, les doutes, etc."></textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                Envoyer la demande
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="text-sm text-gray-500">Aucun autre médecin n'est disponible pour le moment.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Historique des avis -->
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-comments text-blue-500 mr-3"></i>
+                        Avis reçus
+                    </h3>
+                    {% if review_requests %}
+                        <div class="space-y-4">
+                        {% for request in review_requests %}
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between text-sm text-gray-500 mb-2">
+                                    <span>Demandé le {{ request.created_at.strftime('%d/%m/%Y %H:%M') if request.created_at else '' }}</span>
+                                    <span>Par {{ request.requester.full_name }}</span>
+                                </div>
+                                {% if request.message %}
+                                <p class="text-gray-700 mb-3">{{ request.message }}</p>
+                                {% endif %}
+                                <div class="space-y-3">
+                                    {% for review in request.reviews %}
+                                    <div class="border border-gray-100 rounded-lg p-3">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-semibold text-gray-800">{{ review.reviewer.full_name }}</p>
+                                                <p class="text-xs text-gray-500">{{ review.updated_at.strftime('%d/%m/%Y %H:%M') if review.updated_at else 'En attente' }}</p>
+                                            </div>
+                                            <span class="px-3 py-1 rounded-full text-xs font-semibold
+                                                {% if review.status == 'APPROVED' %}bg-green-100 text-green-700
+                                                {% elif review.status == 'REJECTED' %}bg-red-100 text-red-700
+                                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                                {% if review.status == 'APPROVED' %}Avis favorable
+                                                {% elif review.status == 'REJECTED' %}Avis défavorable
+                                                {% else %}En attente{% endif %}
+                                            </span>
+                                        </div>
+                                        {% if review.comment %}
+                                        <p class="text-sm text-gray-700 mt-2">{{ review.comment }}</p>
+                                        {% endif %}
+                                        {% if review.reviewer_id == current_user.id and review.status == 'PENDING' %}
+                                        <form method="post" action="{{ url_for('routes.respond_analysis_review', review_id=review.id) }}" class="mt-3 space-y-2">
+                                            <textarea name="review_comment" rows="2" class="form-input" placeholder="Votre avis"></textarea>
+                                            <div class="flex space-x-2">
+                                                <button name="review_status" value="APPROVED" class="btn-success flex-1" type="submit">Confirmer</button>
+                                                <button name="review_status" value="REJECTED" class="btn-secondary flex-1 border border-red-300 text-red-700" type="submit">Infirmer</button>
+                                            </div>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-sm text-gray-500">
+                            Aucun avis demandé pour cette analyse.
+                        </div>
+                    {% endif %}
+                </div>
+
                 <!-- Résultats de l'analyse -->
                 <div class="card">
                     <div class="flex items-center mb-6">

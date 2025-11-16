@@ -21,7 +21,7 @@ class Config:
     
 
     DATABASE_URL = os.environ.get('DATABASE_URL') or \
-        'postgresql://blood_2_user:pSMF7w6JAwhKJJVI6KxbNpQAGv6llyoZ@dpg-d4bbrvemcj7s73fd37s0-a.oregon-postgres.render.com/blood_2'
+        'postgresql://blood_2_t94j_user:2yBytxS2iDlR9jh6vGpBysdr6uMwqikY@dpg-d4bpo2e3jp1c73btlur0-a.oregon-postgres.render.com/blood_2_t94j'
     
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False

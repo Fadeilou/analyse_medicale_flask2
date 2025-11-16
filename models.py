@@ -169,9 +169,14 @@ class AnalyseResult(db.Model):
     
     # Commentaire médical ajouté par le médecin
     commentaire_medecin = db.Column(db.Text, nullable=True)
+    commentaire_visible_patient = db.Column(db.Boolean, default=False)
     
     # Statut de validation
     statut = db.Column(db.String(20), default='EN_ATTENTE') # EN_ATTENTE, VALIDE, REJETE
+    validation_status = db.Column(db.String(20), default='PENDING') # PENDING, CONFIRMED, REJECTED
+    validation_comment = db.Column(db.Text, nullable=True)
+    validation_date = db.Column(db.DateTime)
+    validation_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     data_encrypted = db.Column(db.Boolean, default=False)
     checksum = db.Column(db.String(64))
     signed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -182,6 +187,7 @@ class AnalyseResult(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     signataire = db.relationship('User', foreign_keys=[signed_by])
+    validator = db.relationship('User', foreign_keys=[validation_user_id], backref='validated_analyses')
     
     # Métadonnées
     image_filename = db.Column(db.String(200))
@@ -252,4 +258,28 @@ class Annotation(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
     
     analyse = db.relationship('AnalyseResult', backref='annotations')
-    annotateur = db.relationship('User', backref='annotations')
+    annotateur = db.relationship('User', foreign_keys=[user_id], backref='annotations')
+
+
+class AnalyseReviewRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    analyse_id = db.Column(db.Integer, db.ForeignKey('analyse_result.id'), nullable=False)
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    message = db.Column(db.Text, nullable=True)
+
+    analyse = db.relationship('AnalyseResult', backref='review_requests')
+    requester = db.relationship('User', foreign_keys=[requester_id], backref='initiated_review_requests')
+
+
+class AnalyseReview(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.Integer, db.ForeignKey('analyse_review_request.id'), nullable=False)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='PENDING') # PENDING, APPROVED, REJECTED
+    comment = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    request = db.relationship('AnalyseReviewRequest', backref='reviews')
+    reviewer = db.relationship('User', foreign_keys=[reviewer_id], backref='analysis_reviews')
