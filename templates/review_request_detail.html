@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% set dashboard_content = true %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <nav class="text-sm text-gray-500 mb-4">
+        <a href="{{ url_for('routes.dashboard') }}" class="hover:text-blue-600">Tableau de bord</a>
+        <span class="mx-2">›</span>
+        <a href="{{ url_for('routes.review_requests_inbox') }}" class="hover:text-blue-600">Demandes d'avis</a>
+        <span class="mx-2">›</span>
+        <span class="text-gray-800">Demande #{{ review.id }}</span>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-notes-medical text-purple-600 mr-3"></i>
+                Demande d'avis #{{ review.id }}
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Sollicité par {{ request_data.requester.full_name }} le {{ request_data.created_at.strftime('%d/%m/%Y %H:%M') if request_data.created_at else 'n/a' }}
+            </p>
+        </div>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold mt-4 lg:mt-0
+            {% if review.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+            {% elif review.status == 'APPROVED' %}bg-green-100 text-green-700
+            {% elif review.status == 'REJECTED' %}bg-red-100 text-red-700
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {% if review.status == 'PENDING' %}En attente de votre avis
+            {% elif review.status == 'APPROVED' %}Avis favorable envoyé
+            {% elif review.status == 'REJECTED' %}Avis défavorable envoyé
+            {% else %}Statut inconnu{% endif %}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            {% if request_data.message %}
+            <div class="card border border-purple-100">
+                <h2 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                    <i class="fas fa-comment-dots text-purple-500 mr-2"></i>
+                    Message du médecin demandeur
+                </h2>
+                <p class="text-gray-700">{{ request_data.message }}</p>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-microscope text-blue-500 mr-2"></i>
+                    Résumé de l'analyse
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="p-4 border rounded-lg {{ 'bg-red-50 border-red-200' if analyse.test_positif else 'bg-green-50 border-green-200' }}">
+                        <p class="text-sm text-gray-500 uppercase">Résultat IA</p>
+                        <p class="text-xl font-bold mt-1 {{ 'text-red-700' if analyse.test_positif else 'text-green-700' }}">
+                            {% if analyse.test_positif %}Anomalie détectée{% else %}Rien à signaler{% endif %}
+                        </p>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <p class="text-sm text-gray-500 uppercase">Type d'anomalie</p>
+                        <p class="text-xl font-semibold mt-1 text-gray-800">{{ analyse.type_anomalie or 'Non précisé' }}</p>
+                    </div>
+                </div>
+                <div class="mt-4 space-y-3">
+                    {% if analyse.recommandation %}
+                    <div>
+                        <p class="text-sm text-gray-500 uppercase mb-1">Recommandation IA</p>
+                        <p class="text-gray-800">{{ analyse.recommandation }}</p>
+                    </div>
+                    {% endif %}
+                    {% if analyse.resultat_global %}
+                    <div>
+                        <p class="text-sm text-gray-500 uppercase mb-1">Synthèse</p>
+                        <p class="text-gray-800">{{ analyse.resultat_global }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-image text-green-500 mr-2"></i>
+                    Image associée
+                </h2>
+                {% if analyse.image_path %}
+                <div class="text-center">
+                    <img src="/static/{{ analyse.image_path }}" alt="Image de l'analyse" class="max-w-full rounded-lg border shadow">
+                    <p class="text-xs text-gray-500 mt-2">Transmise depuis l'analyse originale</p>
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">Aucune image n'est associée à cette analyse.</p>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-comments text-indigo-500 mr-2"></i>
+                    Historique des avis
+                </h2>
+                {% if other_reviews %}
+                <div class="space-y-3">
+                    {% for other in other_reviews %}
+                    <div class="border border-gray-100 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-gray-800">{{ other.reviewer.full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ other.updated_at.strftime('%d/%m/%Y %H:%M') if other.updated_at else 'En attente' }}</p>
+                            </div>
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                {% if other.status == 'APPROVED' %}bg-green-100 text-green-700
+                                {% elif other.status == 'REJECTED' %}bg-red-100 text-red-700
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {% if other.status == 'APPROVED' %}Avis favorable
+                                {% elif other.status == 'REJECTED' %}Avis défavorable
+                                {% else %}En attente{% endif %}
+                            </span>
+                        </div>
+                        {% if other.comment %}
+                        <p class="text-sm text-gray-700 mt-2">{{ other.comment }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">Aucun autre avis n'a été enregistré pour le moment.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 space-y-6">
+            <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-user-md text-blue-500 mr-2"></i>
+                    Détails de la demande
+                </h3>
+                <dl class="space-y-2 text-sm text-gray-700">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Médecin demandeur</dt>
+                        <dd class="font-semibold text-right">{{ request_data.requester.full_name }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Patient</dt>
+                        <dd class="font-semibold text-right">
+                            {% if analyse.patient %}
+                                {{ analyse.patient.nom }} {{ analyse.patient.prenom }}
+                            {% else %}
+                                Anonyme
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Date analyse</dt>
+                        <dd class="font-semibold text-right">{{ analyse.date_analyse.strftime('%d/%m/%Y %H:%M') }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="card" id="respond-form">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-pen text-green-500 mr-2"></i>
+                    Votre avis
+                </h3>
+                {% if can_respond %}
+                <form method="post" action="{{ url_for('routes.respond_analysis_review', review_id=review.id) }}" class="space-y-3">
+                    <div class="flex space-x-2">
+                        <button name="review_status" value="APPROVED" type="submit" class="btn-success flex-1">
+                            <i class="fas fa-thumbs-up mr-2"></i>
+                            Avis favorable
+                        </button>
+                        <button name="review_status" value="REJECTED" type="submit" class="btn-secondary border border-red-200 text-red-700 flex-1">
+                            <i class="fas fa-thumbs-down mr-2"></i>
+                            Avis défavorable
+                        </button>
+                    </div>
+                    <div>
+                        <label for="review_comment" class="text-sm font-medium text-gray-700">Commentaire (optionnel)</label>
+                        <textarea id="review_comment" name="review_comment" rows="4" class="form-input mt-1" placeholder="Expliquez votre avis ou vos recommandations."></textarea>
+                    </div>
+                </form>
+                {% else %}
+                <p class="text-sm text-gray-500">
+                    {% if review.status == 'PENDING' %}
+                        Vous n'êtes pas autorisé à répondre à cette demande.
+                    {% else %}
+                        Avis envoyé le {{ review.updated_at.strftime('%d/%m/%Y %H:%M') if review.updated_at else '' }}.
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

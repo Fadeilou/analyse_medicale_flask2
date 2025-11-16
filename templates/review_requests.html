@@ -123,13 +123,13 @@
                                     {% endif %}
                                 </span>
                                 <div class="flex flex-col gap-2 w-full lg:w-auto">
-                                    <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}"
+                                    <a href="{{ url_for('routes.review_request_detail', review_id=review.id) }}"
                                        class="btn-outline text-sm justify-center">
                                         <i class="fas fa-eye mr-2"></i>
-                                        Voir l'analyse
+                                        Voir la demande
                                     </a>
                                     {% if review.status == 'PENDING' %}
-                                        <a href="{{ url_for('routes.analyse_detail_page', analyse_id=analyse.id) }}#review-request-section"
+                                        <a href="{{ url_for('routes.review_request_detail', review_id=review.id) }}#respond-form"
                                            class="btn-primary text-sm justify-center">
                                             <i class="fas fa-comment-medical mr-2"></i>
                                             Donner mon avis

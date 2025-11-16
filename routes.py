@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory, current_app, send_file, abort
 import os
 import uuid # Pour générer des noms de fichiers uniques
 from werkzeug.utils import secure_filename
@@ -208,10 +208,13 @@ def analyse_detail_page(analyse_id):
     if analyse.user_id != current_user.id:
         flash("Accès non autorisé.", 'danger')
         return redirect(url_for('routes.analyses_list'))
-    doctors = User.query.filter(
-        User.role == RoleEnum.MEDECIN,
-        User.id != current_user.id
-    ).order_by(User.nom.asc()).all()
+    can_request_review = analyse.user_id == current_user.id
+    doctors = []
+    if can_request_review:
+        doctors = User.query.filter(
+            User.role == RoleEnum.MEDECIN,
+            User.id != current_user.id
+        ).order_by(User.nom.asc()).all()
     review_requests = AnalyseReviewRequest.query.filter_by(analyse_id=analyse.id).order_by(AnalyseReviewRequest.created_at.desc()).all()
     can_validate = current_user.role == RoleEnum.MEDECIN and analyse.user_id == current_user.id
     return render_template('analyse_detail.html',
@@ -219,6 +222,7 @@ def analyse_detail_page(analyse_id):
                            doctors=doctors,
                            review_requests=review_requests,
                            can_validate=can_validate,
+                           can_request_review=can_request_review,
                            title=f"Détail Analyse #{analyse.id}",
                            dashboard_content=True)
 
@@ -254,6 +258,36 @@ def review_requests_inbox():
                            stats=stats,
                            status_filter=status_filter,
                            title='Demandes d\'avis',
+                           dashboard_content=True)
+
+@routes.route('/avis/demandes/<int:review_id>')
+@login_required
+@medecin_required
+@audit_action('VIEW', 'ReviewRequest')
+def review_request_detail(review_id):
+    review = AnalyseReview.query.options(
+        joinedload(AnalyseReview.request)
+        .joinedload(AnalyseReviewRequest.analyse)
+        .joinedload(AnalyseResult.patient),
+        joinedload(AnalyseReview.request).joinedload(AnalyseReviewRequest.requester),
+        joinedload(AnalyseReview.reviewer)
+    ).get_or_404(review_id)
+
+    if review.reviewer_id != current_user.id and review.request.requester_id != current_user.id:
+        flash('Accès non autorisé à cette demande d\'avis.', 'danger')
+        return redirect(url_for('routes.review_requests_inbox'))
+
+    analyse = review.request.analyse
+    other_reviews = review.request.reviews
+    can_respond = review.reviewer_id == current_user.id and review.status == 'PENDING'
+
+    return render_template('review_request_detail.html',
+                           review=review,
+                           analyse=analyse,
+                           request_data=review.request,
+                           other_reviews=other_reviews,
+                           can_respond=can_respond,
+                           title=f"Demande d'avis #{review.id}",
                            dashboard_content=True)
 
 @routes.app_context_processor
@@ -1037,15 +1071,16 @@ def request_analysis_review(analyse_id):
 @audit_action('RESPOND_REVIEW', 'Analysis')
 def respond_analysis_review(review_id):
     review = AnalyseReview.query.get_or_404(review_id)
+    detail_url = url_for('routes.review_request_detail', review_id=review.id)
     if review.reviewer_id != current_user.id:
         flash('Vous ne pouvez répondre qu\'aux demandes qui vous sont adressées.', 'danger')
-        return redirect(url_for('routes.analyse_detail_page', analyse_id=review.request.analyse_id))
+        return redirect(detail_url)
 
     status = request.form.get('review_status')
     comment = request.form.get('review_comment', '').strip()
     if status not in ['APPROVED', 'REJECTED']:
         flash('Statut de réponse invalide.', 'danger')
-        return redirect(url_for('routes.analyse_detail_page', analyse_id=review.request.analyse_id))
+        return redirect(detail_url)
 
     try:
         review.status = status
@@ -1057,7 +1092,7 @@ def respond_analysis_review(review_id):
         db.session.rollback()
         flash(f'Erreur lors de la réponse: {e}', 'danger')
 
-    return redirect(url_for('routes.analyse_detail_page', analyse_id=review.request.analyse_id))
+    return redirect(detail_url)
 
 # ============================================================================
 # TÉLÉCHARGEMENTS PDF

@@ -159,6 +159,7 @@
                     {% endif %}
                 </div>
 
+                {% if can_request_review %}
                 <!-- Demande d'avis -->
                 <div class="card" id="review-request-section">
                     <div class="mb-4">
@@ -221,6 +222,7 @@
                     <p class="text-sm text-gray-500">Aucun autre médecin n'est disponible pour le moment.</p>
                     {% endif %}
                 </div>
+                {% endif %}
 
                 <!-- Historique des avis -->
                 <div class="card">
@@ -387,10 +389,12 @@
                             Télécharger PDF
                         </button>
                         
+                        {% if can_request_review %}
                         <button class="w-full btn-secondary text-sm" onclick="scrollToReviewRequest()">
                             <i class="fas fa-user-md mr-2"></i>
                             Demander un avis
                         </button>
+                        {% endif %}
                         
                         <button class="w-full btn-outline text-sm" onclick="addToFavorites()">
                             <i class="fas fa-heart mr-2"></i>
