@@ -219,7 +219,52 @@ def analyse_detail_page(analyse_id):
                            doctors=doctors,
                            review_requests=review_requests,
                            can_validate=can_validate,
-                           title=f"Détail Analyse #{analyse.id}")
+                           title=f"Détail Analyse #{analyse.id}",
+                           dashboard_content=True)
+
+@routes.route('/avis/demandes')
+@login_required
+@medecin_required
+@audit_action('VIEW', 'ReviewRequest')
+def review_requests_inbox():
+    """Boîte de réception des demandes d'avis pour les médecins."""
+    status_filter = request.args.get('status', 'all').upper()
+    base_query = AnalyseReview.query.options(
+        joinedload(AnalyseReview.request)
+        .joinedload(AnalyseReview.request.analyse)
+        .joinedload(AnalyseResult.patient),
+        joinedload(AnalyseReview.request).joinedload(AnalyseReview.request.requester)
+    ).filter(AnalyseReview.reviewer_id == current_user.id).order_by(AnalyseReview.created_at.desc())
+    
+    filtered_query = base_query
+    if status_filter == 'PENDING':
+        filtered_query = base_query.filter(AnalyseReview.status == 'PENDING')
+    elif status_filter == 'COMPLETED':
+        filtered_query = base_query.filter(AnalyseReview.status != 'PENDING')
+    
+    reviews = filtered_query.all()
+    stats = {
+        'pending': base_query.filter(AnalyseReview.status == 'PENDING').count(),
+        'completed': base_query.filter(AnalyseReview.status != 'PENDING').count(),
+        'requested': AnalyseReviewRequest.query.filter_by(requester_id=current_user.id).count()
+    }
+    
+    return render_template('review_requests.html',
+                           reviews=reviews,
+                           stats=stats,
+                           status_filter=status_filter,
+                           title='Demandes d\'avis',
+                           dashboard_content=True)
+
+@routes.app_context_processor
+def inject_review_counts():
+    pending = 0
+    try:
+        if current_user.is_authenticated and current_user.is_medecin():
+            pending = AnalyseReview.query.filter_by(reviewer_id=current_user.id, status='PENDING').count()
+    except Exception:
+        pending = 0
+    return {'pending_review_count': pending}
 
 # --- Route Page d'Analyse (RESTREINTE AUX MÉDECINS) ---
 @routes.route('/analyse', methods=['GET', 'POST'])

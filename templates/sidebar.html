@@ -88,6 +88,22 @@
                         </a>
                     </li>
 
+                    {% if current_user.is_medecin() %}
+                    <!-- Demandes d'avis -->
+                    <li>
+                        <a href="{{ url_for('routes.review_requests_inbox') }}" class="sidebar-item {% if request.endpoint == 'routes.review_requests_inbox' %}active{% endif %}">
+                            <div class="feature-icon" style="width: 2rem; height: 2rem; font-size: 0.875rem;">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <span>Demandes d'avis</span>
+                            {% set pending_reviews = pending_review_count if pending_review_count is defined else 0 %}
+                            {% if pending_reviews > 0 %}
+                                <span class="ml-auto bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">{{ pending_reviews }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endif %}
+
                     <!-- Notifications -->
                     <li>
                         <a href="{{ url_for('routes.view_notifications') }}" class="sidebar-item {% if request.endpoint == 'routes.view_notifications' %}active{% endif %}">
