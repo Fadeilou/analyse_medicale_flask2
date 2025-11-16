@@ -231,9 +231,9 @@ def review_requests_inbox():
     status_filter = request.args.get('status', 'all').upper()
     base_query = AnalyseReview.query.options(
         joinedload(AnalyseReview.request)
-        .joinedload(AnalyseReview.request.analyse)
+        .joinedload(AnalyseReviewRequest.analyse)
         .joinedload(AnalyseResult.patient),
-        joinedload(AnalyseReview.request).joinedload(AnalyseReview.request.requester)
+        joinedload(AnalyseReview.request).joinedload(AnalyseReviewRequest.requester)
     ).filter(AnalyseReview.reviewer_id == current_user.id).order_by(AnalyseReview.created_at.desc())
     
     filtered_query = base_query
