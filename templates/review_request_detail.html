@@ -85,8 +85,9 @@
                     Image associée
                 </h2>
                 {% if analyse.image_path %}
+                {% set image_filename = analyse.image_path.split('/')[-1] %}
                 <div class="text-center">
-                    <img src="/static/{{ analyse.image_path }}" alt="Image de l'analyse" class="max-w-full rounded-lg border shadow">
+                    <img src="{{ url_for('routes.send_result_image', filename=image_filename) }}" alt="Image de l'analyse" class="max-w-full rounded-lg border shadow">
                     <p class="text-xs text-gray-500 mt-2">Transmise depuis l'analyse originale</p>
                 </div>
                 {% else %}

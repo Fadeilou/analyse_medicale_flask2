@@ -1038,6 +1038,33 @@ def request_analysis_review(analyse_id):
         flash('Sélectionnez au moins un médecin.', 'danger')
         return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
 
+    unique_doctor_ids = []
+    for doctor_id in doctor_ids:
+        if doctor_id not in unique_doctor_ids:
+            unique_doctor_ids.append(doctor_id)
+
+    allowed_doctors = []
+    blocked_doctors = []
+    for doctor_id in unique_doctor_ids:
+        doctor = User.query.get(int(doctor_id))
+        if not doctor:
+            continue
+        existing_count = AnalyseReview.query.join(AnalyseReviewRequest).filter(
+            AnalyseReviewRequest.analyse_id == analyse.id,
+            AnalyseReview.reviewer_id == int(doctor_id)
+        ).count()
+        if existing_count >= 2:
+            blocked_doctors.append(doctor.full_name)
+        else:
+            allowed_doctors.append(int(doctor_id))
+
+    if not allowed_doctors:
+        if blocked_doctors:
+            flash("Impossible d'envoyer la demande : ces médecins ont déjà reçu deux sollicitations pour cette analyse : " + ", ".join(blocked_doctors), 'warning')
+        else:
+            flash("Aucun médecin valide sélectionné.", 'warning')
+        return redirect(url_for('routes.analyse_detail_page', analyse_id=analyse_id))
+
     try:
         review_request = AnalyseReviewRequest(
             analyse_id=analyse.id,
@@ -1047,8 +1074,8 @@ def request_analysis_review(analyse_id):
         db.session.add(review_request)
         db.session.flush()
 
-        for doctor_id in doctor_ids:
-            if doctor_id == str(current_user.id):
+        for doctor_id in allowed_doctors:
+            if doctor_id == current_user.id:
                 continue
             review = AnalyseReview(
                 request_id=review_request.id,
@@ -1057,7 +1084,10 @@ def request_analysis_review(analyse_id):
             )
             db.session.add(review)
         db.session.commit()
-        flash('Demande envoyée aux médecins sélectionnés.', 'success')
+        if blocked_doctors:
+            flash("Demande envoyée. Certains médecins ont été ignorés car ils ont déjà reçu deux demandes pour cette analyse : " + ", ".join(blocked_doctors), 'warning')
+        else:
+            flash('Demande envoyée aux médecins sélectionnés.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Erreur lors de l\'envoi de la demande: {e}', 'danger')
