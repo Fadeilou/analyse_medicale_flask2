@@ -192,7 +192,70 @@ def profile():
 @routes.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('index.html', title='Tableau de Bord - Analyse', dashboard_content=True)
+    stats_snapshot = build_statistics_snapshot(14)
+    total_analyses = AnalyseResult.query.count()
+    total_patients = Patient.query.count()
+    total_doctors = User.query.filter(User.role == RoleEnum.MEDECIN).count()
+    total_review_requests = AnalyseReviewRequest.query.count()
+
+    positive_analyses = AnalyseResult.query.filter_by(test_positif=True).count()
+    negative_analyses = max(total_analyses - positive_analyses, 0)
+
+    validation_confirmed = AnalyseResult.query.filter_by(validation_status='CONFIRMED').count()
+    validation_rejected = AnalyseResult.query.filter_by(validation_status='REJECTED').count()
+    validation_pending = max(total_analyses - validation_confirmed - validation_rejected, 0)
+
+    review_status_counts = {
+        'approved': AnalyseReview.query.filter_by(status='APPROVED').count(),
+        'rejected': AnalyseReview.query.filter_by(status='REJECTED').count(),
+        'pending': AnalyseReview.query.filter_by(status='PENDING').count()
+    }
+    total_reviews = sum(review_status_counts.values())
+    responded_reviews = review_status_counts['approved'] + review_status_counts['rejected']
+    review_accuracy_rate = round((review_status_counts['approved'] / responded_reviews) * 100, 1) if responded_reviews else 0
+
+    my_review_count = 0
+    my_pending_reviews = 0
+    if current_user.is_authenticated and current_user.is_medecin():
+        my_review_count = AnalyseReview.query.filter_by(reviewer_id=current_user.id).count()
+        my_pending_reviews = AnalyseReview.query.filter_by(reviewer_id=current_user.id, status='PENDING').count()
+    elif current_user.is_authenticated:
+        my_review_count = total_reviews
+        my_pending_reviews = review_status_counts['pending']
+
+    recent_analyses = AnalyseResult.query.options(
+        joinedload(AnalyseResult.patient),
+        joinedload(AnalyseResult.medecin)
+    ).order_by(desc(AnalyseResult.created_at)).limit(5).all()
+
+    return render_template(
+        'index.html',
+        title='Tableau de bord',
+        dashboard_content=True,
+        kpis={
+            'analyses': total_analyses,
+            'patients': total_patients,
+            'reviews': my_review_count,
+            'pending_reviews': my_pending_reviews,
+            'doctors': total_doctors,
+            'review_requests': total_review_requests
+        },
+        daily_activity=stats_snapshot.get('daily_analyses_data', []),
+        anomaly_breakdown=stats_snapshot.get('anomaly_types_data', {}),
+        review_status_counts=review_status_counts,
+        review_accuracy_rate=review_accuracy_rate,
+        validation_counts={
+            'confirmed': validation_confirmed,
+            'rejected': validation_rejected,
+            'pending': validation_pending
+        },
+        ai_detection={
+            'positive': positive_analyses,
+            'negative': negative_analyses
+        },
+        recent_analyses=recent_analyses,
+        total_reviews=total_reviews
+    )
 
 @routes.route('/analyses')
 @login_required
@@ -329,10 +392,10 @@ def analyse(patient_id=None):
                 load_ai_model()
                 if ai_model is None:
                     flash("Erreur: Le modèle d'analyse d'IA n'est pas disponible. Veuillez réessayer dans quelques instants.", 'danger')
-                    return render_template('index.html', title='Analyse', dashboard_content=True)
+                    return render_template('analysis_workbench.html', title='Analyse', dashboard_content=True)
         except Exception as e:
             flash(f"Erreur de chargement du modèle: {str(e)}", 'danger')
-            return render_template('index.html', title='Analyse', dashboard_content=True)
+            return render_template('analysis_workbench.html', title='Analyse', dashboard_content=True)
 
         if 'image_upload' not in request.files:
             flash('Aucun fichier image sélectionné.', 'warning')
@@ -376,7 +439,7 @@ def analyse(patient_id=None):
             else:
                 flash('Type de fichier non autorisé.', 'danger')
 
-    return render_template('index.html',
+    return render_template('analysis_workbench.html',
                            resultat_analyse=resultat_analyse,
                            patient_info=patient_info,
                            title='Analyse',
